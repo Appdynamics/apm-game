@@ -17,18 +17,12 @@ services:
     type: mysql
 
 transactions:
-  - http://frontend/cart/checkout:
-    - exits:
-        - http://backend/process/payment
-        - exits:
-          - /pay:
-            - proto: http
-            - hosts:
-              - ext-payment-1
-              - ext-payment-2
-  - http://frontend/cart/add:
-    - exits:
-        - http://backend/add-to-cart
-          exits:
-            - sql://backend-db
-                query: "INSERT a,s,d,f INTO carts"
+- http://frontend/cart/checkout:
+  - http://tracking/checkout
+  - http://backend/checkout:
+    - scheme: http
+      host: [ ext-payment-1, ext-payment-2 ]
+      path: /pay
+- http://frontend/cart/add:
+  - http://backend/cartadd:
+    - sql://backend-db
