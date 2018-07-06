@@ -1,19 +1,19 @@
 global:
 
 services:
-  - frontend:
+  frontend:
     type: nodejs
     agent: yes
-  - backend:
+  backend:
     type: nodejs
     agent: yes
-  - ext-payment-1:
+  ext-payment-1:
     type: nodejs
     agent: no
-  - ext-payment-2:
+  ext-payment-2:
     type: nodejs
     agent: no
-  - backend-db:
+  backend-db:
     type: mysql
 
 transactions:
