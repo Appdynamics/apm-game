@@ -1,0 +1,34 @@
+global:
+
+services:
+  - frontend:
+    type: nodejs
+    agent: yes
+  - backend:
+    type: nodejs
+    agent: yes
+  - ext-payment-1:
+    type: nodejs
+    agent: no
+  - ext-payment-2:
+    type: nodejs
+    agent: no
+  - backend-db:
+    type: mysql
+
+transactions:
+  - http://frontend/cart/checkout:
+    - exits:
+        - http://backend/process/payment
+        - exits:
+          - /pay:
+            - proto: http
+            - hosts:
+              - ext-payment-1
+              - ext-payment-2
+  - http://frontend/cart/add:
+    - exits:
+        - http://backend/add-to-cart
+          exits:
+            - sql://backend-db
+                query: "INSERT a,s,d,f INTO carts"
