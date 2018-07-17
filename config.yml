@@ -1,28 +1,47 @@
-global:
+apm:
+  controller: http://osxltsneum.fritz.box:8090
+  accountName: customer1
+  accountAccessKey: ca6b2b9a-d391-412b-a5c4-c65e744d2b0f
+  applicationName: apm_game
 
 services:
   frontend:
     type: nodejs
     agent: yes
+    port: 3000
+    endpoints:
+      http:
+        /checkout:
+          - http://backend/cart/checkout
+          - mail://send
+        /addtocart:
+          - http://backend/cart/add
   backend:
     type: nodejs
     agent: yes
+    endpoints:
+      http:
+        /cart/checkout:
+          - sql://backend-db/?query=SELECT * from carts
+          - [http://ext-payment-1/pay, http://ext-payment-2/pay]
+        /cart/add:
+          - sql://backend-db/?query=SELECT * from carts
   ext-payment-1:
     type: nodejs
     agent: no
+    endpoints:
+      http:
+        pay:
+          - sleep,5000
   ext-payment-2:
     type: nodejs
     agent: no
+    endpoints:
+      http:
+        pay:
+          - sleep,5000
   backend-db:
     type: mysql
-
-transactions:
-- http://frontend/cart/checkout:
-  - http://tracking/checkout
-  - http://backend/checkout:
-    - scheme: http
-      host: [ ext-payment-1, ext-payment-2 ]
-      path: /pay
-- http://frontend/cart/add:
-  - http://backend/cartadd:
-    - sql://backend-db
+    tables:
+      carts: [id, owner, value]
+    disabled: true

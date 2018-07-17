@@ -1,0 +1,11 @@
+{
+  "type": "nodejs",
+  "agent": "yes",
+  "endpoints": {
+    "http": {
+      "/checkout": ["http://backend/cart/checkout"],
+      "/addtocart": ["http://backend/cart/add"]
+    }
+  },
+  "name": "frontend"
+}

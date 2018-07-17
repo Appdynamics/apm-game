@@ -1,0 +1,12 @@
+{
+  "type": "nodejs",
+  "agent": "yes",
+  "endpoints": {
+    "http": {
+      "/cart/checkout": ["sleep,1000", "sql://backend-db/?query=SELECT * from carts", ["http://ext-payment-1/pay", "http://ext-payment-2/pay"]],
+      "/cart/add": ["sql://backend-db/?query=SELECT * from carts"],
+      "error": [{"call": "error,500,Cart not found", "probability": 0.5}]
+    }
+  },
+  "name": "backend"
+}

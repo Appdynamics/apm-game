@@ -1,5 +1,7 @@
 {
   "dependencies": {
-    "express": "^4.16.3"
+    "appdynamics": "^4.4.3",
+    "express": "^4.16.3",
+    "morgan": "^1.9.0"
   }
 }

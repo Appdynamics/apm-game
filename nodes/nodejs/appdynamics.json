@@ -1,0 +1,6 @@
+{
+  "controller": "http://localhost:8090",
+  "accountName": "customer1",
+  "accountAccessKey": "ca6b2b9a-d391-412b-a5c4-c65e744d2b0f",
+  "applicationName": "apm_game"
+}

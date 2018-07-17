@@ -1,61 +1,71 @@
 const yaml = require('js-yaml');
 const fs = require('fs');
 const process = require('process')
-const { spawn } = require('child_process')
+const {spawn} = require('child_process')
 const url = require('url');
+const shellescape = require('shell-escape')
 
-console.log()
+const dockerPrefix = process.argv[3]
+const dockerNetwork = process.argv[4]
+
+var containers = []
+
+process.on('SIGINT', function () {
+  console.log('Terminating ...')
+  containers.forEach(function(container) {
+    console.log(`Stopping container ${container} ...`)
+    spawn(`docker stop ${container}`, {
+      stdio: 'inherit',
+      shell: true
+    })
+  })
+});
 
 try {
-    const config = yaml.safeLoad(fs.readFileSync(process.argv[2], 'utf8'));
-    const {global, services, transactions} = config
+  const config = yaml.safeLoad(fs.readFileSync(process.argv[2], 'utf8'));
+  const {apm, services} = config
 
-    if(typeof services !== 'object') {
-      console.log('Could not read services list!')
-      process.exit()
+  if (typeof services !== 'object') {
+    console.log('Could not read services list!')
+    process.exit()
+  }
+
+  var port = 3000
+  Object.keys(services).forEach(function(name) {
+
+    const service = {
+      ...services[name],
+      name: name
     }
 
-    var port = 3000
-    Object.keys(services).forEach(function (service) {
+    if(!service.disabled) {
 
-      services[service].port = port
-      services[service].host = 'localhost'
+      const dockerImage = dockerPrefix + service.type
 
-      const properties = services[service]
-      const child = spawn(`node ${__dirname}/../nodes/nodejs/index.js ${properties.port}`, { shell: true })
+      console.log('==== Starting ' + name)
 
-      child.stdout.on('data', (data) => {
-        console.log(`${service} stdout:\n${data}`);
-      });
-
-      port++
-    })
-
-    function buildTransaction(transactionName, transactions) {
-
-      console.log(transactionName)
-
-      const transactionUrl = url.parse(transactionName)
-
-      var body = null
-
-      if(Array.isArray(transactions[transactionName])) {
-        body = transactions[transactionName].map(t => buildTransaction(t, transactions[transactionName]))
+      var cmd = ['docker', 'run', '-e', `APP_CONFIG=${JSON.stringify(service)}`,
+                                                        '-e', `APM_CONFIG=${JSON.stringify(apm)}`,
+                                                        '--network', dockerNetwork,
+                                                        '--name', name,
+                                                        '--rm'
+                                                        ]
+      if(typeof service.port === 'number') {
+          cmd.push('-p')
+          cmd.push(`${service.port}:80`)
       }
 
-      const transaction = {
-        protocol: transactionUrl.protocol,
-        host: transactionUrl.host,
-        port: transactionUrl.port,
-        path: transactionUrl.path,
-        body: body
-      }
+      cmd.push(dockerImage)
 
-      return transaction
+      const child = spawn(shellescape(cmd), {
+        stdio: 'inherit',
+        shell: true
+      })
+
+      containers.push(name)
     }
-
-    console.log(Object.keys(transactions).map(t => buildTransaction(t, transactions)))
+  })
 
 } catch (e) {
-    console.log(e);
+  console.log(e);
 }
