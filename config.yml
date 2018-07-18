@@ -17,7 +17,7 @@ services:
         /addtocart:
           - http://backend/cart/add
   backend:
-    type: nodejs
+    type: php
     agent: yes
     endpoints:
       http:
