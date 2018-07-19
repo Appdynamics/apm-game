@@ -45,15 +45,28 @@ try {
       console.log('==== Starting ' + name)
 
       var cmd = ['docker', 'run', '-e', `APP_CONFIG=${JSON.stringify(service)}`,
-                                                        '-e', `APM_CONFIG=${JSON.stringify(apm)}`,
-                                                        '--network', dockerNetwork,
-                                                        '--name', name,
-                                                        '--rm'
-                                                        ]
+                                  '-e', `APM_CONFIG=${JSON.stringify(apm)}`,
+                                  '-e', `WITH_AGENT=${service.agent === 'yes'?1:0}`,
+                                  '--network', dockerNetwork,
+                                  '--name', name,
+                                  '--rm'
+                ]
       if(Array.isArray(service.aliases)) {
         service.aliases.forEach(function(alias) {
           cmd.push('--network-alias=' + alias)
         })
+      }
+
+      if(service.agent === 'yes' && service.type === 'java') {
+          const controller = url.parse(apm.controller)
+          cmd.push('-e', `APPDYNAMICS_CONTROLLER_HOST_NAME=${controller.hostname}`)
+          cmd.push('-e', `APPDYNAMICS_CONTROLLER_HOST_PORT=${controller.port}`)
+          cmd.push('-e', `APPDYNAMICS_CONTROLLER_SSL_ENABLED=${controller.protocol.startsWith('https')}`)
+          cmd.push('-e', `APPDYNAMICS_AGENT_APPLICATION_NAME=${apm.applicationName}`)
+          cmd.push('-e', `APPDYNAMICS_AGENT_ACCOUNT_NAME=${apm.accountName}`)
+          cmd.push('-e', `APPDYNAMICS_AGENT_ACCOUNT_ACCESS_KEY=${apm.accountAccessKey}`)
+          cmd.push('-e', `APPDYNAMICS_AGENT_TIER_NAME=${name}`)
+          cmd.push('-e', `APPDYNAMICS_AGENT_NODE_NAME=${name}`)
       }
 
       if(typeof service.port === 'number') {

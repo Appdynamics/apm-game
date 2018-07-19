@@ -1,2 +1,4 @@
+.idea
+AppServerAgent-*
 *.class
 target/maven-*

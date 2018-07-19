@@ -39,3 +39,11 @@ services:
     tables:
       carts: [id, owner, value]
     disabled: true
+
+load:
+  simple:
+    type: curl
+    urls:
+      - http://frontend/checkout
+      - http://frontend/addtocart
+  
