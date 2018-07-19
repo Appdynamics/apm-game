@@ -23,15 +23,15 @@ process.on('SIGINT', function () {
 
 try {
   const config = yaml.safeLoad(fs.readFileSync(process.argv[2], 'utf8'));
-  const {apm, services} = config
+  const {apm, services, loaders} = config
 
   if (typeof services !== 'object') {
     console.log('Could not read services list!')
     process.exit()
   }
 
-  var port = 3000
   Object.keys(services).forEach(function(name) {
+    return
 
     const service = {
       ...services[name],
@@ -44,7 +44,7 @@ try {
 
       console.log('==== Starting ' + name)
 
-      var cmd = ['docker', 'run', '-e', `APP_CONFIG=${JSON.stringify(service)}`,
+      var cmd = ['echo', 'docker', 'run', '-e', `APP_CONFIG=${JSON.stringify(service)}`,
                                   '-e', `APM_CONFIG=${JSON.stringify(apm)}`,
                                   '-e', `WITH_AGENT=${service.agent === 'yes'?1:0}`,
                                   '--network', dockerNetwork,
@@ -74,7 +74,7 @@ try {
           cmd.push(`${service.port}:80`)
       }
 
-      cmd.push(dockerImage)
+
 
       const child = spawn(shellescape(cmd), {
         stdio: 'inherit',
@@ -83,6 +83,35 @@ try {
 
       containers.push(name)
     }
+  })
+
+  Object.keys(loaders).forEach(function(name) {
+
+    const loader = {
+      ...loaders[name],
+      name: name
+    }
+
+    const dockerImage = dockerPrefix + loader.type
+
+    var cmd = ['docker', 'run', '-e', `LOAD_CONFIG=${JSON.stringify(loader)}`,
+                                '--network', dockerNetwork,
+                                '--name', name,
+                                '--rm'
+              ]
+
+    if(loader.type === 'curl') {
+      cmd.push('-e', `URLS=${loader.urls.join(" ")}`)
+    }
+
+    cmd.push(dockerImage)
+
+    const child = spawn(shellescape(cmd), {
+                stdio: 'inherit',
+                shell: true
+    })
+
+    containers.push(name)
   })
 
 } catch (e) {

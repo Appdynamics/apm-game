@@ -33,17 +33,17 @@ services:
     endpoints:
       http:
         pay:
-          - sleep,5000
+          - sleep,500
   backend-db:
     type: mysql
     tables:
       carts: [id, owner, value]
     disabled: true
 
-load:
+loaders:
   simple:
     type: curl
     urls:
-      - http://frontend/checkout
+      - http://frontend/addtocart      
       - http://frontend/addtocart
-  
+      - http://frontend/checkout
