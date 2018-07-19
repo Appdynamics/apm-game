@@ -10,7 +10,9 @@ DOCKER_NETWORK="${DOCKER_PREFIX}network"
 
 for DIR in nodes/*;
 do
-  docker build -t "${DOCKER_PREFIX}`basename $DIR`" $DIR;
+  if [ -d $DIR ] ; then
+    docker build -t "${DOCKER_PREFIX}`basename $DIR`" $DIR;
+  fi
 done;
 
 docker network create ${DOCKER_NETWORK}

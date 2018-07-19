@@ -44,12 +44,18 @@ try {
 
       console.log('==== Starting ' + name)
 
-      var cmd = ['echo', 'docker', 'run', '-e', `APP_CONFIG=${JSON.stringify(service)}`,
+      var cmd = ['docker', 'run', '-e', `APP_CONFIG=${JSON.stringify(service)}`,
                                                         '-e', `APM_CONFIG=${JSON.stringify(apm)}`,
                                                         '--network', dockerNetwork,
                                                         '--name', name,
                                                         '--rm'
                                                         ]
+      if(Array.isArray(service.aliases)) {
+        service.aliases.forEach(function(alias) {
+          cmd.push('--network-alias=' + alias)
+        })
+      }
+
       if(typeof service.port === 'number') {
           cmd.push('-p')
           cmd.push(`${service.port}:80`)

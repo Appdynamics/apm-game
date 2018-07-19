@@ -2,11 +2,11 @@ apm:
   controller: http://osxltsneum.fritz.box:8090
   accountName: customer1
   accountAccessKey: ca6b2b9a-d391-412b-a5c4-c65e744d2b0f
-  applicationName: apm_game
+  applicationName: apm_game_new
 
 services:
   frontend:
-    type: nodejs
+    type: java
     agent: yes
     port: 3000
     endpoints:
@@ -26,16 +26,10 @@ services:
           - [http://ext-payment-1/pay, http://ext-payment-2/pay]
         /cart/add:
           - sql://backend-db/?query=SELECT * from carts
-  ext-payment-1:
+  ext-payment:
     type: nodejs
     agent: no
-    endpoints:
-      http:
-        pay:
-          - sleep,5000
-  ext-payment-2:
-    type: nodejs
-    agent: no
+    aliases: [ext-payment-1, ext-payment-2]
     endpoints:
       http:
         pay:
