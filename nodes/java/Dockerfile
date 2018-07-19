@@ -1,9 +1,7 @@
 FROM openjdk:8
-RUN mkdir /app
-RUN mkdir /app/classes
-COPY JavaNode.java /app
-COPY jetty-all-uber.jar /app
+RUN mkdir -p /app/dependency-jars
+COPY target/javanode-1.0-SNAPSHOT.jar /app
+COPY target/dependency-jars /app/dependency-jars
 WORKDIR /app
 EXPOSE 80
-RUN javac -d classes -cp jetty-all-uber.jar JavaNode.java
-CMD ["java", "-cp", "classes:jetty-all-uber.jar", "com.appdynamics.apmgame.JavaNode"]
+CMD ["java", "-jar", "javanode-1.0-SNAPSHOT.jar", "80"]
