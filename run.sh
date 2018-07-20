@@ -22,8 +22,10 @@ do
   fi
 done;
 
+docker build -t "${DOCKER_PREFIX}machine" machine;
+
 docker network create ${DOCKER_NETWORK}
 
-nodemon master/index.js config.yml ${DOCKER_PREFIX} ${DOCKER_NETWORK}
+node master/index.js config.yml ${DOCKER_PREFIX} ${DOCKER_NETWORK}
 
 docker network rm ${DOCKER_NETWORK}

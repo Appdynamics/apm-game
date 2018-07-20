@@ -7,5 +7,5 @@ do
   do
     /usr/bin/curl -s "${URL}?unique_session_id=${ID}"
   done
-  sleep 1
+  sleep 0.1
 done;

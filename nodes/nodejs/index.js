@@ -6,8 +6,11 @@ const apm = JSON.parse(process.env.APM_CONFIG)
 
 const controller = url.parse(apm.controller)
 
+var appdynamics = {}
+
 if (config.agent === 'yes') {
-  require("appdynamics").profile({
+  appdynamics = require("appdynamics")
+  appdynamics.profile({
     controllerHostName: controller.hostname,
     controllerPort: controller.port,
     controllerSslEnabled: controller.protocol.startsWith('https'),
@@ -36,7 +39,7 @@ Object.keys(endpoints).forEach(function(key) {
   if(!key.startsWith('/')) {
     endpoints['/' + key] = endpoints[key]
     delete endpoints[key]
-  }  
+  }
 })
 
 console.log(endpoints)
@@ -84,9 +87,14 @@ function processCall(call) {
   })
 }
 
-app.get('/**', function(req, res) {
-  if (endpoints.hasOwnProperty(req.url)) {
-    var promises = endpoints[req.url].map(processCall)
+function processRequest(req, res) {
+  const path = url.parse(req.url).pathname
+  if(req.query.unique_session_id) {
+    var txn = appdynamics.getTransaction(req);
+    txn.addSnapshotData("unique_session_id", req.query.unique_session_id)
+  }
+  if (endpoints.hasOwnProperty(path)) {
+    var promises = endpoints[path].map(processCall)
     Promise.all(promises).then(function(results) {
       res.send(results)
     }).catch(function(reason) {
@@ -95,10 +103,14 @@ app.get('/**', function(req, res) {
   } else {
     res.status(404).send("404")
   }
+}
+
+app.get('/**', function(req, res) {
+  processRequest(req, res)
 })
 
 app.post('/**', function(req, res) {
-  res.send(req.url)
+  processRequest(req, res)
 })
 
 app.listen(port, () => console.log(
