@@ -2,12 +2,12 @@ const system = require('system');
 
 
 
-if(!system.env.hasOwnProperty('LOADER_CONFIG')) {
-	console.log('No loader config for phantom.js provided, exiting ...')
+if(!system.env.hasOwnProperty('LOAD_CONFIG')) {
+	console.log('No load config for phantom.js provided, exiting ...')
 	phantom.exit(1);
 }
 
-const config = JSON.parse(system.env.LOADER_CONFIG)
+const config = JSON.parse(system.env.LOAD_CONFIG)
 const apm = JSON.parse(system.env.APM_CONFIG)
 
 if(typeof config.wait !== 'number') {
@@ -101,6 +101,7 @@ function process(urls) {
 					page.onResourceReceived = function(response) {
 						if(response.stage === 'end') {
 							if (response.url.endsWith('adrum')) {
+								console.log(JSON.stringify(page.cookies))
 								console.log('beacon received!')
 								clearTimeout(timeoutId)
 								page.release();
@@ -130,6 +131,7 @@ function process(urls) {
 
 function loop() {
 	console.log("===")
+	phantom.clearCookies();
 	var urls = config.urls
 	if(typeof config.withSession === 'undefined' || config.withSession) {
 		const sessionId = uuidv4()
