@@ -73,10 +73,11 @@ services:
     disabled: true
 
 loaders:
-  simple:
-    type: curl
+  browser:
+    type: phantomjs
     wait: 15
     count: 2
+    adrumTimeout: 5
     urls:
       - http://frontend/addtocart
       - http://frontend/addtocart

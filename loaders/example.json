@@ -1,0 +1,5 @@
+{
+  "urls": ["http://localhost:8000/checkout", "http://localhost:8000/checkout","http://localhost:8000/checkout","http://localhost:8000/checkout" ],
+  "wait": 1,
+  "adrumTimeout": 5
+}

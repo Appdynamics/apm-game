@@ -39,7 +39,6 @@ if (config.agent === 'yes') {
     var eumConfig = Object.assign({
       xd: {enable : false}
     }, apm.eum);
-    console.log(eumConfig)
   }
 
   appdynamics.profile(appdynamicsProfile)
@@ -62,8 +61,6 @@ Object.keys(endpoints).forEach(function(key) {
     delete endpoints[key]
   }
 })
-
-console.log(endpoints)
 
 if (isNaN(port)) {
   port = 3000

@@ -112,6 +112,7 @@ try {
       const dockerImage = dockerPrefix + loader.type
 
       var cmd = ['docker', 'run', '-e', `LOAD_CONFIG=${JSON.stringify(loader)}`,
+                                  '-e', `APM_CONFIG=${JSON.stringify(apm)}`,
                                   '--network', dockerNetwork,
                                   '--name', containerName,
                                   '--rm'
