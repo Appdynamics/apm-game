@@ -6,6 +6,17 @@ function startsWith($haystack, $needle)
      return (substr($haystack, 0, $length) === $needle);
 }
 
+function buildResponse($timeout) {
+  $start = microtime(true);
+  $finish = $start;
+  $response = "";
+  while($finish - $start < $timeout/1000) {
+    $response .= " ";
+    $finish = microtime(true);
+  }
+  return strlen($response) . " slow response";
+}
+
 function processCall($call) {
   if(is_array($call)) {
     shuffle($call);
@@ -21,6 +32,9 @@ function processCall($call) {
       $timeout = explode(',', $call)[1];
       usleep($timeout * 1000);
       return "Slept for ${timeout}";
+  } elseif(startsWith($call, 'slow')) {
+      $timeout = explode(',', $call)[1];
+      return buildResponse($timeout);
   } elseif(startsWith($call, 'error')) {
       $error = explode(',', $call);
       throw new Exception($error[2], $error[1]);

@@ -59,6 +59,17 @@ if (isNaN(port)) {
   port = 3000
 }
 
+function buildResponse(timeout) {
+  const start = process.hrtime();
+  var elapsed = process.hrtime(start);
+  var response = ""
+  while(elapsed[0] * 1000000000 + elapsed[1] < timeout * 1000000) {
+    response += " ";
+    elapsed = process.hrtime(start);
+  }
+  return response.length+" slow response"
+}
+
 function processCall(call) {
   return new Promise(function(resolve, reject) {
     // If call is an array, select one element as call
@@ -83,6 +94,9 @@ function processCall(call) {
       setTimeout(function() {
         resolve(`Slept for ${timeout}`)
       }, timeout)
+    } else if (call.startsWith('slow')) {
+      var [_,timeout] = call.split(',')
+      resolve(buildResponse(timeout))
     } else if (call.startsWith('http://')) {
       http.get(call, function(res, req) {
         const body = [];

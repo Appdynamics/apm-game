@@ -68,8 +68,7 @@ public class JavaNode {
                 response += " ";
                 finish = System.currentTimeMillis();
             }
-            long timeElapsed = finish - start;
-            return response+"slow response";
+            return response.length+"slow response";
         }
 
         protected String processCall(String call) throws HttpException {
