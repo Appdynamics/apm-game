@@ -1,3 +1,2 @@
-- Java node
-- Load
-- PHP nodename is "dynamic" so the nodes should be marked historical after shutdown
+- Analytics for Java
+- EUM

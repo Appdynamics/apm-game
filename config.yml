@@ -5,6 +5,12 @@ apm:
   applicationName: apm_game
   eventsService: http://osxltsneum.fritz.box:9080
   globalAccountName: customer1_1fbb87ca-d377-45a9-9643-9904bceee0f0
+  eum:
+    appKey: 'AD-AAB-AAK-RUM'
+    adrumExtUrlHttp: 'http://cdn.appdynamics.com'
+    adrumExtUrlHttps: 'https://cdn.appdynamics.com'
+    beaconUrlHttp: 'http://col.eum-appdynamics.com'
+    beaconUrlHttps: 'https://col.eum-appdynamics.com'
 
 services:
   frontend:
@@ -16,8 +22,10 @@ services:
         /checkout:
           - http://backend/cart/checkout
           - mail://send
+          - image,http://cdn/logo.png
         /addtocart:
           - http://backend/cart/add
+          - image,http://cdn/logo.png
   backend:
     type: java
     agent: yes
@@ -26,10 +34,12 @@ services:
         /cart/checkout:
           - sql://backend-db/?query=SELECT * from carts
           - [http://ext-payment-1/pay, http://ext-payment-2/pay, http://ext-payment-3/pay, http://ext-payment-1/pay, http://ext-payment-2/pay, http://ext-payment-1/pay]
+
         /cart/add:
           - sql://backend-db/?query=SELECT * from carts
           - call: slow,800
             probability: 0.1
+          - image,http://cdn/logo.png
   ext-payment:
     type: nodejs
     agent: no
@@ -48,6 +58,14 @@ services:
           - call: error,500,Payment failed
             probability: 0.5
           - sleep,3000
+  cdn:
+    type: nodejs
+    agent: no
+    port: 3002
+    endpoints:
+      http:
+        logo.png:
+          - sleep,1200
   backend-db:
     type: mysql
     tables:

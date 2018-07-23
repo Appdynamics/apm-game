@@ -3,7 +3,7 @@
   "agent": "yes",
   "endpoints": {
     "http": {
-      "/checkout": ["http://backend/cart/checkout"],
+      "/checkout": ["http://backend/cart/checkout","image,http://cdn/logo.png"],
       "/addtocart": ["http://backend/cart/add","slow,1500"]
     }
   },

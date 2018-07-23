@@ -8,6 +8,8 @@ const controller = url.parse(apm.controller)
 
 var appdynamics = {}
 
+var withEum = false
+
 if (config.agent === 'yes') {
   appdynamics = require("appdynamics")
 
@@ -30,6 +32,14 @@ if (config.agent === 'yes') {
       port: 9090,
       SSL: false
     }
+  }
+
+  if(typeof apm.eum === 'object') {
+    withEum = true
+    var eumConfig = Object.assign({
+      xd: {enable : false}
+    }, apm.eum);
+    console.log(eumConfig)
   }
 
   appdynamics.profile(appdynamicsProfile)
@@ -90,7 +100,6 @@ function processCall(call) {
       reject({ code, message })
     } else if (call.startsWith('sleep')) {
       var [_,timeout] = call.split(',')
-
       setTimeout(function() {
         resolve(`Slept for ${timeout}`)
       }, timeout)
@@ -105,6 +114,9 @@ function processCall(call) {
       }).on('error', function(err) {
         resolve(err)
       })
+    } else if (call.startsWith('image')) {
+      var [_,src] = call.split(',')
+      resolve(`<img src='${src}' />`)
     } else {
       // No other methods are currently implemented
       resolve(`${call} is not supported`)
@@ -122,9 +134,16 @@ function processRequest(req, res) {
   if (endpoints.hasOwnProperty(path)) {
     var promises = endpoints[path].map(processCall)
     Promise.all(promises).then(function(results) {
-      res.send(results)
+
+      if(withEum) {
+        res.send(`<!doctype html><html lang="en"><head><title>${config.name}</title><script>window['adrum-start-time'] = new Date().getTime();window['adrum-config'] = ${JSON.stringify(eumConfig)}</script><script src='//cdn.appdynamics.com/adrum/adrum-latest.js'></script><body>${JSON.stringify(results)}`)
+      } else {
+        res.send(results)
+      }
+
+
     }).catch(function(reason) {
-      res.status(reason.code).send(reason.message)
+      res.status(typeof reason.code === 'number'?reason.code:500).send(reason.message)
     })
   } else {
     res.status(404).send("404")
