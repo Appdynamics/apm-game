@@ -3,6 +3,13 @@
 DOCKER_PREFIX="svrnm/apm-game-"
 DOCKER_NETWORK="${DOCKER_PREFIX}network"
 
+CONFIG=$1
+
+if [ ! -f ${CONFIG} ]
+then
+	CONFIG=config.yml
+fi;
+
 (
   cd master/ || exit
   npm install

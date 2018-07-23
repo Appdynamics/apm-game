@@ -1,5 +1,6 @@
 #!/bin/sh
-echo "Running CURL load..."
+echo "Running CURL load in ${WAIT} seconds..."
+sleep ${WAIT}
 while [ true ]
 do
   ID=`uuidgen`

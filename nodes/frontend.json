@@ -4,7 +4,7 @@
   "endpoints": {
     "http": {
       "/checkout": ["http://backend/cart/checkout"],
-      "/addtocart": ["http://backend/cart/add"]
+      "/addtocart": ["http://backend/cart/add","slow,1500"]
     }
   },
   "name": "frontend"

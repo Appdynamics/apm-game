@@ -39,7 +39,6 @@ try {
     }
 
     if(!service.disabled) {
-      return
       const dockerImage = dockerPrefix + service.type
 
       console.log('==== Starting ' + name)
@@ -59,13 +58,17 @@ try {
 
       if(service.agent === 'yes' && service.type === 'java') {
           cmd.push('-e', `APPDYNAMICS_CONTROLLER_HOST_NAME=${controller.hostname}`)
-          cmd.push('-e', `APPDYNAMICS_CONTROLLER_HOST_PORT=${controller.port}`)
+          cmd.push('-e', `APPDYNAMICS_CONTROLLER_PORT=${controller.port}`)
           cmd.push('-e', `APPDYNAMICS_CONTROLLER_SSL_ENABLED=${controller.protocol.startsWith('https')}`)
           cmd.push('-e', `APPDYNAMICS_AGENT_APPLICATION_NAME=${apm.applicationName}`)
           cmd.push('-e', `APPDYNAMICS_AGENT_ACCOUNT_NAME=${apm.accountName}`)
           cmd.push('-e', `APPDYNAMICS_AGENT_ACCOUNT_ACCESS_KEY=${apm.accountAccessKey}`)
           cmd.push('-e', `APPDYNAMICS_AGENT_TIER_NAME=${name}`)
           cmd.push('-e', `APPDYNAMICS_AGENT_NODE_NAME=${name}`)
+      }
+
+      if(apm.eventsService && apm.globalAccountName) {
+        cmd.push('-e', `WITH_ANALYTICS=1`)
       }
 
       if(typeof service.port === 'number') {
@@ -85,32 +88,49 @@ try {
   })
 
   Object.keys(loaders).forEach(function(name) {
-    return
     const loader = {
       ...loaders[name],
       name: name
     }
 
-    const dockerImage = dockerPrefix + loader.type
-
-    var cmd = ['docker', 'run', '-e', `LOAD_CONFIG=${JSON.stringify(loader)}`,
-                                '--network', dockerNetwork,
-                                '--name', name,
-                                '--rm'
-              ]
-
-    if(loader.type === 'curl') {
-      cmd.push('-e', `URLS=${loader.urls.join(" ")}`)
+    if(loader.disabled) {
+      return
     }
 
-    cmd.push(dockerImage)
+    if(typeof loader.count !== 'number') {
+      loader.count = 1
+    }
 
-    const child = spawn(shellescape(cmd), {
-                stdio: 'inherit',
-                shell: true
-    })
+    if(typeof loader.wait !== 'number') {
+      loader.wait = 0
+    }
 
-    containers.push(name)
+    for(var i = 0; i < loader.count; i++) {
+
+      const containerName = `${name}-${i}`
+
+      const dockerImage = dockerPrefix + loader.type
+
+      var cmd = ['docker', 'run', '-e', `LOAD_CONFIG=${JSON.stringify(loader)}`,
+                                  '--network', dockerNetwork,
+                                  '--name', containerName,
+                                  '--rm'
+                ]
+
+      if(loader.type === 'curl') {
+        cmd.push('-e', `URLS=${loader.urls.join(" ")}`)
+        cmd.push('-e', `WAIT=${loader.wait}`)
+      }
+
+      cmd.push(dockerImage)
+
+      const child = spawn(shellescape(cmd), {
+                  stdio: 'inherit',
+                  shell: true
+      })
+
+      containers.push(containerName)
+    }
   })
 
   var machineAgentName = 'machine-agent'
@@ -123,6 +143,7 @@ try {
                                           '-v', '/:/hostroot:ro',
                                           '-v', '/var/run/docker.sock:/var/run/docker.sock',
                                           '--rm',
+                                          '--network', dockerNetwork,
                                           '--name', machineAgentName,
                                           ]
   if(apm.eventsService && apm.globalAccountName) {

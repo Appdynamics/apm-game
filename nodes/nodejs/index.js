@@ -10,7 +10,8 @@ var appdynamics = {}
 
 if (config.agent === 'yes') {
   appdynamics = require("appdynamics")
-  appdynamics.profile({
+
+  var appdynamicsProfile = {
     controllerHostName: controller.hostname,
     controllerPort: controller.port,
     controllerSslEnabled: controller.protocol.startsWith('https'),
@@ -21,7 +22,17 @@ if (config.agent === 'yes') {
     nodeName: config.name,
     libagent: true,
     debug: true
-  })
+  }
+
+  if(apm.eventsService && apm.globalAccountName) {
+    appdynamicsProfile.analytics = {
+      host: 'machine-agent',
+      port: 9090,
+      SSL: false
+    }
+  }
+
+  appdynamics.profile(appdynamicsProfile)
 }
 
 const express = require('express')
@@ -91,7 +102,8 @@ function processRequest(req, res) {
   const path = url.parse(req.url).pathname
   if(req.query.unique_session_id) {
     var txn = appdynamics.getTransaction(req);
-    txn.addSnapshotData("unique_session_id", req.query.unique_session_id)
+    txn.addSnapshotData("uniqueSessionId", req.query.unique_session_id)
+    txn.addAnalyticsData("uniqueSessionId", req.query.unique_session_id)
   }
   if (endpoints.hasOwnProperty(path)) {
     var promises = endpoints[path].map(processCall)

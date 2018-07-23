@@ -1,10 +1,10 @@
 apm:
   controller: http://osxltsneum.fritz.box:8090
   accountName: customer1
-  accountAccessKey: ca6b2b9a-d391-412b-a5c4-c65e744d2b0f
-  applicationName: apm_game_2
+  accountAccessKey: 4b4c0344-64ba-4777-a3ac-10b143910367
+  applicationName: apm_game
   eventsService: http://osxltsneum.fritz.box:9080
-  globalAccountName: customer1_bc537d78-f54a-4253-a0c0-4c4d3196c872
+  globalAccountName: customer1_1fbb87ca-d377-45a9-9643-9904bceee0f0
 
 services:
   frontend:
@@ -25,9 +25,11 @@ services:
       http:
         /cart/checkout:
           - sql://backend-db/?query=SELECT * from carts
-          - [http://ext-payment-1/pay, http://ext-payment-2/pay, http://ext-payment-3/pay]
+          - [http://ext-payment-1/pay, http://ext-payment-2/pay, http://ext-payment-3/pay, http://ext-payment-1/pay, http://ext-payment-2/pay, http://ext-payment-1/pay]
         /cart/add:
           - sql://backend-db/?query=SELECT * from carts
+          - call: slow,800
+            probability: 0.1
   ext-payment:
     type: nodejs
     agent: no
@@ -43,6 +45,8 @@ services:
     endpoints:
       http:
         pay:
+          - call: error,500,Payment failed
+            probability: 0.5
           - sleep,3000
   backend-db:
     type: mysql
@@ -53,6 +57,8 @@ services:
 loaders:
   simple:
     type: curl
+    wait: 15
+    count: 2
     urls:
       - http://frontend/addtocart
       - http://frontend/addtocart

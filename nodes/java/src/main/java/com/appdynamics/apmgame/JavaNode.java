@@ -12,17 +12,16 @@ import javax.json.JsonValue;
 import javax.json.JsonString;
 import javax.json.JsonArray;
 
-import java.util.List;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 import javax.json.Json;
 import javax.json.JsonReader;
 
-import org.eclipse.jetty.client.HttpClient;
+import java.net.URL;
+import java.util.Scanner;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.servlet.ServletHandler;
 
 public class JavaNode {
@@ -61,6 +60,18 @@ public class JavaNode {
             NodeServlet.endpoints = config.getJsonObject("endpoints").getJsonObject("http");
         }
 
+        protected String buildResponse(int timeout) {
+            long start = System.currentTimeMillis();
+            long finish = start;
+            String response = "";
+            while(finish - start < timeout) {
+                response += " ";
+                finish = System.currentTimeMillis();
+            }
+            long timeElapsed = finish - start;
+            return response+"slow response";
+        }
+
         protected String processCall(String call) throws HttpException {
             if (call.startsWith("sleep")) {
                 int timeout = Integer.parseInt(call.split(",")[1]);
@@ -72,13 +83,24 @@ public class JavaNode {
                 return "Slept for " + timeout;
             }
 
+            if (call.startsWith("slow")) {
+                int timeout = Integer.parseInt(call.split(",")[1]);
+                return this.buildResponse(timeout);
+            }
+
+            if (call.startsWith("slow")) {
+
+            }
+
             if (call.startsWith("http://")) {
                 try {
-                    HttpClient client = new HttpClient();
+                    /*HttpClient client = new HttpClient();
                     client.start();
                     String response = client.GET(call).getContentAsString();
                     client.stop();
-                    return response;
+                    return response;*/
+                    URL url = new URL(call);
+                    return new Scanner( url.openStream() ).useDelimiter( "\\Z" ).next();
                 } catch (Exception e) {
                     return e.getMessage();
                 }
