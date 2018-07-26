@@ -13,17 +13,6 @@ apm:
     beaconUrlHttps: 'https://col.eum-appdynamics.com'
 
 services:
-  shop:
-    type: nodejs
-    agent: yes
-    endpoints:
-      /homepage:
-        - slow,1000
-        - image,http://cdn/logo.png
-      /addtocart:
-
-      /cartpage:
-
   frontend:
     type: nodejs
     agent: yes
@@ -32,10 +21,10 @@ services:
       http:
         /checkout:
           - http://backend/cart/checkout
-          - mail://send
+          - cache,128
           - image,http://cdn/logo.png
         /addtocart:
-          - [http://backend/cart/add, http://backend-v2/cart/add]
+          - [http://backend/cart/add, http://backend-v2/cart/add, http://backend-v3/cart/add]
           - image,http://cdn/logo.png
   backend:
     type: java
@@ -43,11 +32,11 @@ services:
     endpoints:
       http:
         /cart/checkout:
-          - sql://backend-db/?query=SELECT * from carts
+          - cache,1024
           - [http://ext-payment-1/pay, http://ext-payment-2/pay, http://ext-payment-3/pay, http://ext-payment-1/pay, http://ext-payment-2/pay, http://ext-payment-1/pay]
 
         /cart/add:
-          - sql://backend-db/?query=SELECT * from carts
+          - cache,128
           - call: slow,800
             probability: 0.1
           - image,http://cdn/logo.png
@@ -58,6 +47,17 @@ services:
       http:
         /cart/add:
           - sql://backend-db/?query=SELECT * from carts
+          - call: slow,800
+            probability: 0.5
+          - image,http://cdn/logo.png
+  backend-v3:
+    type: php
+    agent: yes
+    port: 3007
+    endpoints:
+      http:
+        /cart/add:
+          - cache,512
           - call: slow,800
             probability: 0.5
           - image,http://cdn/logo.png
@@ -97,7 +97,7 @@ loaders:
   browser:
     type: phantomjs
     wait: 15
-    count: 2
+    count: 5
     adrumTimeout: 5
     urls:
       - http://frontend/addtocart

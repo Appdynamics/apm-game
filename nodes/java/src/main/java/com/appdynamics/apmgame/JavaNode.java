@@ -1,35 +1,37 @@
 package com.appdynamics.apmgame;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-
-import java.io.IOException;
-import java.io.StringReader;
-import javax.json.JsonObject;
-import javax.json.JsonValue;
-import javax.json.JsonString;
-import javax.json.JsonArray;
-
-
-import java.util.concurrent.ThreadLocalRandom;
-
-import javax.json.Json;
-import javax.json.JsonReader;
-
-import java.net.URL;
-import java.util.Scanner;
-
+import net.sf.ehcache.Element;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHandler;
 
+import javax.json.*;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.StringReader;
+import java.net.URL;
+import java.util.Scanner;
+import java.util.concurrent.ThreadLocalRandom;
+
+/*import org.ehcache.Cache;
+import org.ehcache.CacheManager;
+import org.ehcache.config.builders.CacheManagerBuilder;
+import org.ehcache.config.builders.CacheConfigurationBuilder;
+import org.ehcache.config.builders.ResourcePoolsBuilder;*/
+
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
+
 public class JavaNode {
 
+    protected static Cache cache;
 
     public static void main(String[] args) throws Exception {
 
         int port = 8080;
+        CacheManager cacheManager;
 
         if (args.length > 0) {
             port = Integer.parseInt(args[0]);
@@ -40,6 +42,12 @@ public class JavaNode {
 
         jsonReader = Json.createReader(new StringReader(System.getenv("APM_CONFIG")));
         JsonObject apmConfig = jsonReader.readObject();
+
+        CacheManager cm = CacheManager.getInstance();
+
+        cm.addCache("cache1");
+
+        cache = cm.getCache("cache1");
 
         Server server = new Server(port);
         ServletHandler handler = new ServletHandler();
@@ -59,6 +67,7 @@ public class JavaNode {
         protected static JsonObject apmConfig;
         protected static JsonObject endpoints;
 
+
         public static void setConfig(JsonObject config, JsonObject apmConfig) {
             NodeServlet.config = config;
             NodeServlet.apmConfig = apmConfig;
@@ -74,6 +83,20 @@ public class JavaNode {
                 finish = System.currentTimeMillis();
             }
             return response.length() + "slow response";
+        }
+
+        protected String loadFromCache(int timeout) {
+            long start = System.currentTimeMillis();
+            long finish = start;
+            int i = 0;
+            Integer element = new Integer(0);
+            while(finish - start < timeout) {
+                i++;
+                element = new Integer(i);
+                cache.putIfAbsent(new Element(element, i));
+                finish = System.currentTimeMillis();
+            }
+            return "Cache result: " + cache.get(element).toString();
         }
 
         protected String processCall(String call) throws HttpException {
@@ -92,8 +115,9 @@ public class JavaNode {
                 return this.buildResponse(timeout);
             }
 
-            if (call.startsWith("slow")) {
-
+            if (call.startsWith("cache")) {
+                int timeout = Integer.parseInt(call.split(",")[1]);
+                return this.loadFromCache(timeout);
             }
 
             if (call.startsWith("http://")) {

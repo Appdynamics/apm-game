@@ -1,5 +1,13 @@
 <?php
 
+if(!extension_loaded('appdynamics_agent')) {
+    function appdynamics_start_transaction($arg1, $arg2) {}
+    function appdynamics_continue_transaction($arg1) {}
+    function appdynamics_end_transaction() {}
+    function appdynamics_begin_exit_call() {}
+    function appdynamics_end_exit_call() {}
+}
+
 $apmConfig = json_decode($_ENV["APM_CONFIG"]);
 
 $withEum = false;
@@ -15,6 +23,19 @@ function startsWith($haystack, $needle)
 {
      $length = strlen($needle);
      return (substr($haystack, 0, $length) === $needle);
+}
+
+function loadFromCache($timeout) {
+  $start = microtime(true);
+  $finish = $start;
+  $response = "";
+  while($finish - $start < $timeout/1000) {
+    $exitCall = appdynamics_begin_exit_call(AD_EXIT_CACHE, 'Redis Cache', ['VENDOR' => 'Redis', "SERVER POOL" => 'redis:6380'], false);
+    usleep(1000 * rand(1,5));
+    appdynamics_end_exit_call($exitCall);
+    $finish = microtime(true);
+  }
+  return  ($finish - $start). " loaded from cache";
 }
 
 function buildResponse($timeout) {
@@ -57,6 +78,9 @@ function processCall($call) {
       curl_setopt($ch, CURLOPT_URL, $call);
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
       return curl_exec($ch);
+  } elseif(startsWith($call, 'cache')) {
+    $timeout = explode(',', $call)[1];
+    return loadFromCache($timeout);
   }
   return "${call} is not supported";
 }

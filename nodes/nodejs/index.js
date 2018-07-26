@@ -7,7 +7,12 @@ const apm = JSON.parse(process.env.APM_CONFIG)
 
 const controller = url.parse(apm.controller)
 
-var appdynamics = {}
+var appdynamics = {
+  getTransaction: function() { return {
+    startExitCall: function() {},
+    endExitCall: function() {}
+  }; }
+}
 
 var withEum = false
 
@@ -81,7 +86,29 @@ function buildResponse(timeout) {
   return response.length+" slow response"
 }
 
-function processCall(call) {
+function loadFromCache(timeout, txn) {
+  const start = process.hrtime();
+  var elapsed = process.hrtime(start);
+  var response = ""
+  while(elapsed[0] * 1000000000 + elapsed[1] < timeout * 1000000) {
+    var exit = txn.startExitCall({
+      exitType: "EXIT_CACHE",
+      label: "Redis Cache",
+      backendName: "Redis",
+      identifyingProperties: {
+        "SERVER POOL": "redis:6380"
+      }
+    });
+
+    elapsed = process.hrtime(start);
+    response += " ";
+
+    txn.endExitCall(exit)
+  }
+  return response.length+" send data to cache"
+}
+
+function processCall(call, req) {
   return new Promise(function(resolve, reject) {
     // If call is an array, select one element as call
     if (Array.isArray(call)) {
@@ -118,6 +145,10 @@ function processCall(call) {
     } else if (call.startsWith('image')) {
       var [_,src] = call.split(',')
       resolve(`<img src='${src}' />`)
+    } else if (call.startsWith('cache')) {
+      var [_,timeout] = call.split(',')
+      var txn = appdynamics.getTransaction(req);
+      resolve(loadFromCache(timeout, txn))
     } else {
       // No other methods are currently implemented
       resolve(`${call} is not supported`)
@@ -128,22 +159,31 @@ function processCall(call) {
 function processRequest(req, res, params) {
 
   const path = url.parse(req.url).pathname
-  if(params.unique_session_id) {
-    var txn = appdynamics.getTransaction(req);
-    txn.addSnapshotData("uniqueSessionId", req.query.unique_session_id)
-    txn.addAnalyticsData("uniqueSessionId", req.query.unique_session_id)
-  }
 
-  if(params.hasOwnProperty('analytics') && typeof params.analytics === 'object') {
-    Object.keys(params.analytics).forEach(function(key) {
-      console.log('Adding analytics data: ', key, params.analytics[key])
-      txn.addAnalyticsData(key, params.analytics[key])
-      txn.addSnapshotData(key, params.analytics[key])
-    })
+  var txn = appdynamics.getTransaction(req);
+
+  if(txn) {
+
+    if(params.unique_session_id) {
+
+      txn.addSnapshotData("uniqueSessionId", req.query.unique_session_id)
+      txn.addAnalyticsData("uniqueSessionId", req.query.unique_session_id)
+    }
+
+    if(params.hasOwnProperty('analytics') && typeof params.analytics === 'object') {
+      Object.keys(params.analytics).forEach(function(key) {
+        console.log('Adding analytics data: ', key, params.analytics[key])
+        txn.addAnalyticsData(key, params.analytics[key])
+        txn.addSnapshotData(key, params.analytics[key])
+      })
+    }
+
   }
 
   if (endpoints.hasOwnProperty(path)) {
-    var promises = endpoints[path].map(processCall)
+    var promises = endpoints[path].map(function(call) {
+      return processCall(call, req)
+    })
     Promise.all(promises).then(function(results) {
 
       if(withEum) {
