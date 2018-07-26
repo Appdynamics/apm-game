@@ -1,2 +1,12 @@
 - Analytics for Java
 - EUM
+- iot
+
+- https://www.npmjs.com/package/randexp
+- time based calls: { call: asdf, cron: }
+- provide image names to machine agent
+- puppeteer
+- journey agent
+- DB
+- MQ
+- Cache!

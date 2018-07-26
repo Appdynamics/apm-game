@@ -1,5 +1,6 @@
 const process = require('process')
 const url = require('url')
+var bodyParser = require('body-parser');
 
 const config = JSON.parse(process.env.APP_CONFIG)
 const apm = JSON.parse(process.env.APM_CONFIG)
@@ -49,6 +50,9 @@ const morgan = require('morgan')
 const http = require('http')
 
 const app = express()
+
+app.use(bodyParser.json()); // for parsing application/json
+app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 app.use(morgan('combined'))
 
 var port = parseInt(process.argv[2])
@@ -121,13 +125,23 @@ function processCall(call) {
   })
 }
 
-function processRequest(req, res) {
+function processRequest(req, res, params) {
+
   const path = url.parse(req.url).pathname
-  if(req.query.unique_session_id) {
+  if(params.unique_session_id) {
     var txn = appdynamics.getTransaction(req);
     txn.addSnapshotData("uniqueSessionId", req.query.unique_session_id)
     txn.addAnalyticsData("uniqueSessionId", req.query.unique_session_id)
   }
+
+  if(params.hasOwnProperty('analytics') && typeof params.analytics === 'object') {
+    Object.keys(params.analytics).forEach(function(key) {
+      console.log('Adding analytics data: ', key, params.analytics[key])
+      txn.addAnalyticsData(key, params.analytics[key])
+      txn.addSnapshotData(key, params.analytics[key])
+    })
+  }
+
   if (endpoints.hasOwnProperty(path)) {
     var promises = endpoints[path].map(processCall)
     Promise.all(promises).then(function(results) {
@@ -148,11 +162,11 @@ function processRequest(req, res) {
 }
 
 app.get('/**', function(req, res) {
-  processRequest(req, res)
+  processRequest(req, res, req.query)
 })
 
 app.post('/**', function(req, res) {
-  processRequest(req, res)
+  processRequest(req, res, req.body)
 })
 
 app.listen(port, () => console.log(

@@ -38,11 +38,14 @@ public class JavaNode {
         JsonReader jsonReader = Json.createReader(new StringReader(System.getenv("APP_CONFIG")));
         JsonObject config = jsonReader.readObject();
 
+        jsonReader = Json.createReader(new StringReader(System.getenv("APM_CONFIG")));
+        JsonObject apmConfig = jsonReader.readObject();
+
         Server server = new Server(port);
         ServletHandler handler = new ServletHandler();
         server.setHandler(handler);
 
-        NodeServlet.setConfig(config);
+        NodeServlet.setConfig(config, apmConfig);
 
         handler.addServletWithMapping(NodeServlet.class, "/*");
 
@@ -53,10 +56,12 @@ public class JavaNode {
     @SuppressWarnings("serial")
     public static class NodeServlet extends HttpServlet {
         protected static JsonObject config;
+        protected static JsonObject apmConfig;
         protected static JsonObject endpoints;
 
-        public static void setConfig(JsonObject config) {
+        public static void setConfig(JsonObject config, JsonObject apmConfig) {
             NodeServlet.config = config;
+            NodeServlet.apmConfig = apmConfig;
             NodeServlet.endpoints = config.getJsonObject("endpoints").getJsonObject("http");
         }
 
@@ -68,7 +73,7 @@ public class JavaNode {
                 response += " ";
                 finish = System.currentTimeMillis();
             }
-            return response.length+"slow response";
+            return response.length() + "slow response";
         }
 
         protected String processCall(String call) throws HttpException {
@@ -93,11 +98,6 @@ public class JavaNode {
 
             if (call.startsWith("http://")) {
                 try {
-                    /*HttpClient client = new HttpClient();
-                    client.start();
-                    String response = client.GET(call).getContentAsString();
-                    client.stop();
-                    return response;*/
                     URL url = new URL(call);
                     return new Scanner( url.openStream() ).useDelimiter( "\\Z" ).next();
                 } catch (Exception e) {
@@ -131,8 +131,16 @@ public class JavaNode {
         public void handleEndpoint(HttpServletResponse response, JsonArray endpoint) throws IOException {
             response.setStatus(HttpServletResponse.SC_OK);
 
+            StringBuilder result = new StringBuilder();
+
             for (JsonValue entry : endpoint) {
-                response.getWriter().println(this.preProcessCall(entry));
+                result.append(this.preProcessCall(entry));
+            }
+
+            if(NodeServlet.apmConfig.containsKey("eum")) {
+                response.getWriter().println("<!doctype html><html lang=\"en\"><head><title>" + NodeServlet.config.getString("name") + "</title><script>window['adrum-start-time'] = new Date().getTime();window['adrum-config'] = " + NodeServlet.apmConfig.getJsonObject("eum") + " </script><script src='//cdn.appdynamics.com/adrum/adrum-latest.js'></script><body>" + result);
+            } else {
+                response.getWriter().println(result);
             }
         }
 

@@ -1,5 +1,16 @@
 <?php
 
+$apmConfig = json_decode($_ENV["APM_CONFIG"]);
+
+$withEum = false;
+
+if(isset($apmConfig->eum)) {
+  $withEum = true;
+  $eumConfig = $apmConfig->eum;
+
+  $eumConfig->xd = ["enable" => false];
+}
+
 function startsWith($haystack, $needle)
 {
      $length = strlen($needle);
@@ -38,6 +49,9 @@ function processCall($call) {
   } elseif(startsWith($call, 'error')) {
       $error = explode(',', $call);
       throw new Exception($error[2], $error[1]);
+  } elseif(startsWith($call, 'image')) {
+      $src = explode(',', $call)[1];
+      return "<img src=".$src.">";
   } elseif(startsWith($call, 'http')) {
       $ch = curl_init();
       curl_setopt($ch, CURLOPT_URL, $call);
@@ -63,7 +77,11 @@ foreach ($endpoints as $key => $value) {
 if(property_exists($endpoints, $endpoint)) {
   try {
     $result = array_map(processCall, $endpoints->$endpoint);
-    echo json_encode($result);
+    if($withEum) {
+      echo "<!doctype html><html lang=\"en\"><head><title>" . $name . "</title><script>window['adrum-start-time'] = new Date().getTime();window['adrum-config'] = ". json_encode($eumConfig) ."}</script><script src='//cdn.appdynamics.com/adrum/adrum-latest.js'></script><body>".json_encode($result);
+    } else {
+      echo json_encode($result);
+    }
   } catch(Exception $e) {
     http_response_code($e->getCode());
     echo $e->getMessage();
