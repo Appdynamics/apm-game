@@ -6,7 +6,8 @@
       "/checkout": ["http://backend/cart/checkout","image,http://cdn/logo.png"],
       "/addtocart": ["http://backend/cart/add","slow,1500"],
       "/cache": ["cache,1024"],
-      "/db": ["sql://osxltsneum.fritz.box/shop?query=INSERT INTO carts(name,value) VALUES(test,123)"]
+      "/db": ["sql://osxltsneum.fritz.box/shop?query=INSERT INTO carts(name,value) VALUES(test,123)"],
+      "/schedule": ["sleep,50", {"call": "error,500,oops", "schedule": "0-30 * * * * * *"}]
     }
   },
   "name": "frontend"

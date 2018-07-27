@@ -1,6 +1,5 @@
 const process = require('process')
 const url = require('url')
-var bodyParser = require('body-parser');
 
 const config = JSON.parse(process.env.APP_CONFIG)
 const apm = JSON.parse(process.env.APM_CONFIG)
@@ -53,6 +52,8 @@ if (config.agent === 'yes') {
 const express = require('express')
 const morgan = require('morgan')
 const http = require('http')
+const cronmatch = require('cronmatch')
+var bodyParser = require('body-parser');
 
 const app = express()
 
@@ -116,8 +117,12 @@ function processCall(call, req) {
     }
     // If call is an object, check for probability
     if (typeof call === 'object') {
-        if(call.probability <= Math.random()) {
+        if(call.hasOwnProperty('probability') && call.probability <= Math.random()) {
           resolve(`${call.call} was not probable`)
+          return
+        }
+        if(call.hasOwnProperty('schedule') && !cronmatch.match(call.schedule, new Date())) {
+          resolve(`${call.call} was not scheduled`)
           return
         }
         call = call.call

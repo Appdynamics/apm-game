@@ -68,6 +68,10 @@ services:
     endpoints:
       http:
         pay:
+          - call: sleep,8000
+            schedule: "*/5 * * * * * *"
+          - call: error,500,Oopsi
+            schedule: "*/10 * * * * * *"
           - sleep,500
   ext-payment-3:
     type: nodejs
