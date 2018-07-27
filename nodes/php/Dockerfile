@@ -8,6 +8,7 @@ COPY agent-setup.php /usr/local/bin
 RUN chmod +x /usr/local/bin/entrypoint.sh
 COPY index.php /var/www/html
 COPY htaccess.txt /var/www/html/.htaccess
+RUN docker-php-ext-install pdo pdo_mysql
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 EXPOSE 80
 CMD ["apache2-foreground"]

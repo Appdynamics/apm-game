@@ -46,7 +46,7 @@ services:
     endpoints:
       http:
         /cart/add:
-          - sql://backend-db/?query=SELECT * from carts
+          - sql://backend-db/shop?query=INSERT INTO carts(name,value) VALUES(test,123)
           - call: slow,800
             probability: 0.5
           - image,http://cdn/logo.png
@@ -57,7 +57,7 @@ services:
     endpoints:
       http:
         /cart/add:
-          - cache,512
+          - sql://backend-db/shop?query=INSERT INTO carts(name,value) VALUES(test,123)
           - call: slow,800
             probability: 0.5
           - image,http://cdn/logo.png
@@ -89,9 +89,11 @@ services:
           - sleep,1200
   backend-db:
     type: mysql
-    tables:
-      carts: [id, owner, value]
-    disabled: true
+    databases:
+      shop:
+        carts: [id, name, value]
+        customers: [id, name, email]
+
 
 loaders:
   browser:

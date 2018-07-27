@@ -67,6 +67,10 @@ try {
           cmd.push('-e', `APPDYNAMICS_AGENT_NODE_NAME=${name}`)
       }
 
+      if(service.type === 'mysql') {
+        cmd.push('-e', 'MYSQL_ROOT_PASSWORD=root')
+      }
+
       if(apm.eventsService && apm.globalAccountName) {
         cmd.push('-e', `WITH_ANALYTICS=1`)
       }

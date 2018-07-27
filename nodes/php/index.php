@@ -31,8 +31,10 @@ function loadFromCache($timeout) {
   $response = "";
   while($finish - $start < $timeout/1000) {
     $exitCall = appdynamics_begin_exit_call(AD_EXIT_CACHE, 'Redis Cache', ['VENDOR' => 'Redis', "SERVER POOL" => 'redis:6380'], false);
-    usleep(1000 * rand(1,5));
-    appdynamics_end_exit_call($exitCall);
+    usleep(1000 * rand(100,200));
+    if(!is_null($exitCall)) {
+      appdynamics_end_exit_call($exitCall);
+    }
     $finish = microtime(true);
   }
   return  ($finish - $start). " loaded from cache";
@@ -47,6 +49,27 @@ function buildResponse($timeout) {
     $finish = microtime(true);
   }
   return strlen($response) . " slow response";
+}
+
+function queryDatabase($url) {
+
+  var_dump($url);
+
+  $hostName = $url['host'];
+  $database = substr($url['path'], 1);
+
+  parse_str($url['query'], $query);
+  $query = $query['query'];
+
+  try {
+      $dbh = new PDO('mysql:dbname='.$database.';host='.$hostName, 'root', 'root');
+  } catch (PDOException $e) {
+      return 'Connection failed: ' . $e->getMessage();
+  }
+
+  $dbh->query($query);
+
+  return "Database query '".$query."' executed on ".$database."@".$hostName;
 }
 
 function processCall($call) {
@@ -81,6 +104,8 @@ function processCall($call) {
   } elseif(startsWith($call, 'cache')) {
     $timeout = explode(',', $call)[1];
     return loadFromCache($timeout);
+  } elseif(startsWith($call, 'sql')) {
+    return queryDatabase(parse_url($call));
   }
   return "${call} is not supported";
 }
