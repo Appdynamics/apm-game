@@ -151,6 +151,37 @@ Services with type nodejs, php or java can serve multiple endpoints via differen
           ...        
 ```
 
+The *call sequences* below each endpoint are the simulated logic of your business application. Since the order of elements matters, you provide them in YAML list notation:
+
+```YAML
+...
+        /checkout:
+          - http://backend/cart/checkout
+          - sleep,200
+          - call: error,500,Aborted
+            probability: 0.1
+            schedule: "* */2 * * * * *"
+          - ...
+...
+```
+
+The example above first executes a call to another service, called backend, then sleeps for 200 milliseconds and afterwards an error is thrown with a probability of 10%. Here is a list of supported commands and modifiers:
+
+- **Commands** are like lines of code, that are executed by a service. You can call as many of them as you like to define an endpoint.
+  - `http://<service>/<endpoint>`: Call another service via http.
+  - `sql://<service>/<database>?query=<query>`: Call a database service via SQL.
+  - `sleep,<timeout>`: Stop processing for `<timeout>` milliseconds. Note, that the call graph will contain a language-specific `sleep` method, so use it especially with agent-less services and prefer `slow` for those having an agent.
+  - `slow,<timeout>`: Slow down processing by around `<timeout>` milliseconds. The timeout is not accurate, so it will most of the time longer than the value given in `<timeout>`.
+  - `cache,<timeout>`: Call a remote service of type cache. For Java this is ehcache2, for PHP and nodejs there is no real cache implementation, but they will tell you that a redis service was called.
+  - `image,<URL>`: Put an `<img src=<URL>>` on the result page. This can be used to slow down end user responses.
+  - `error,<code>,<message>`: Throw an error with HTTP code `<code>` and message `<message>`.
+
+
+- **Modifiers** change the behaviour of a call. To use them provide an object notation for your call. As you can see in the example above, you can combine modifiers as you like:
+  - `probability: <value>`: Execute this line of code with the probability of `<value>`. Provide a float for `<value>` between 0 and 1, where 0 means 0% and 1 means 100%.  
+  - `schedule: <cron>`: Execute this line of code, only if the given `<cron>` expression is matched. If you provide an expression with five fields, it is assumed that you start with minutes. If you provide seven fields, the first is assumed to be seconds and the last is assumed to be years.
+
+
 ### Databases
 
 Services with type mysql can be setup with multiple databases and tables. Provide a list of databases with a sub-list of tables and columns to have them generated at start:

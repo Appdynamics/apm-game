@@ -69,9 +69,9 @@ services:
       http:
         pay:
           - call: sleep,8000
-            schedule: "*/5 * * * * * *"
+            schedule: "* */2 * * * * *"
           - call: error,500,Oopsi
-            schedule: "*/10 * * * * * *"
+            schedule: "* */3 * * * * *"
           - sleep,500
   ext-payment-3:
     type: nodejs
@@ -109,3 +109,5 @@ loaders:
       - http://frontend/addtocart
       - http://frontend/addtocart
       - http://frontend/checkout
+      - closeDoor
+      - { ... }
