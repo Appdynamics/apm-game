@@ -169,7 +169,7 @@ The example above first executes a call to another service, called backend, then
 
 - **Commands** are like lines of code, that are executed by a service. You can call as many of them as you like to define an endpoint.
   - `http://<service>/<endpoint>`: Call another service via http.
-  - `sql://<service>/<database>?query=<query>`: Call a database service via SQL.
+  - `sql://<service>/<database>?query=<query>` (only php): Call a database service via SQL.
   - `sleep,<timeout>`: Stop processing for `<timeout>` milliseconds. Note, that the call graph will contain a language-specific `sleep` method, so use it especially with agent-less services and prefer `slow` for those having an agent.
   - `slow,<timeout>`: Slow down processing by around `<timeout>` milliseconds. The timeout is not accurate, so it will most of the time longer than the value given in `<timeout>`.
   - `cache,<timeout>`: Call a remote service of type cache. For Java this is ehcache2, for PHP and nodejs there is no real cache implementation, but they will tell you that a redis service was called.
@@ -179,7 +179,7 @@ The example above first executes a call to another service, called backend, then
 
 - **Modifiers** change the behaviour of a call. To use them provide an object notation for your call. As you can see in the example above, you can combine modifiers as you like:
   - `probability: <value>`: Execute this line of code with the probability of `<value>`. Provide a float for `<value>` between 0 and 1, where 0 means 0% and 1 means 100%.  
-  - `schedule: <cron>`: Execute this line of code, only if the given `<cron>` expression is matched. If you provide an expression with five fields, it is assumed that you start with minutes. If you provide seven fields, the first is assumed to be seconds and the last is assumed to be years.
+  - `schedule: <cron>` (only nodejs): Execute this line of code, only if the given `<cron>` expression is matched. If you provide an expression with five fields, it is assumed that you start with minutes. If you provide seven fields, the first is assumed to be seconds and the last is assumed to be years.
 
 
 ### Databases
@@ -190,17 +190,37 @@ Services with type mysql can be setup with multiple databases and tables. Provid
 ...
   backend-db:
     type: mysql
-      databases:
-        shop:
-          carts: [id, name, value]
-          customers: [id, name, email]
-        fulfilment:
-          ...
+    databases:
+      shop:
+        carts: [id, name, value]
+        customers: [id, name, email]
+      fulfilment:
+        ...
 ```
+
+For the example above two databases are generated, shop and fulfilment, and within the shop database there are two tables, carts and customers with the given columns. All columns are generated as `VARCHAR(255)`, except id which is used as primary key.
+
 
 ## Loaders
 
-In this section you can provide multiple load giving services. The name you provide is currently only used to name the docker container.
+In this section you can provide multiple load giving services. The name you provide is currently only used to name the docker container:
+
+```YAML
+loaders:
+  browser:
+    type: phantomjs
+    wait: 15
+    count: 5
+    adrumTimeout: 5
+    urls:
+      - http://frontend/addtocart
+      - http://frontend/addtocart
+      - http://frontend/checkout
+```
+
+Currently *APM Game* comes with two loaders: curl and phantomjs. Both take a list of `urls` and call them in the sequence given endlessly. By providing a `count` you can increase the number of docker instances that send load against your services. The `wait` parameter is used to delay the start of the load, so all your other services can be setup properly. For loaders of type `phantomjs` you can additionally provide a parameter `adrumTimeout`, that terminates a request waiting for the adrum beacon after the given time.
+
+Note, that for each sequence of requests a `unique_session_id` is generated and send to the services as `GET` parameter. A node.js frontend is picking up this value automatically for snapshots and analytics data. For PHP and Java you need to configure the data collectors in the UI. 
 
 
 # Develop
