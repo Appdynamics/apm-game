@@ -1,6 +1,11 @@
 # APM Game
 
-Build applications with errors and let other people find them with [AppDynamics](https://www.appdynamics.com/)!
+Let the APM games begin! Have you ever had the evenings, where you wanted to play with your friends and families some rounds of identifying performance issues with [AppDynamics](https://www.appdynamics.com/), but missed the game to do that? -- Probably not, but here is **APM Games** anyhow, with some further use cases:
+
+- Build *interactive demos* where your audiance can interact with AppDynamics themselves following your guidance.
+- Heavily inspired by demosim, you can build custom demos, if [DemoMonkey](https://github.com/Appdynamics/demomonkey/) does not fit all your needs.
+- Show customers after a TDD, how their future implementation of AppDynamics might look like.
+- ...
 
 # Installation
 
@@ -220,7 +225,7 @@ loaders:
 
 Currently *APM Game* comes with two loaders: curl and phantomjs. Both take a list of `urls` and call them in the sequence given endlessly. By providing a `count` you can increase the number of docker instances that send load against your services. The `wait` parameter is used to delay the start of the load, so all your other services can be setup properly. For loaders of type `phantomjs` you can additionally provide a parameter `adrumTimeout`, that terminates a request waiting for the adrum beacon after the given time.
 
-Note, that for each sequence of requests a `unique_session_id` is generated and send to the services as `GET` parameter. A node.js frontend is picking up this value automatically for snapshots and analytics data. For PHP and Java you need to configure the data collectors in the UI. 
+Note, that for each sequence of requests a `unique_session_id` is generated and send to the services as `GET` parameter. A node.js frontend is picking up this value automatically for snapshots and analytics data. For PHP and Java you need to configure the data collectors in the UI.
 
 
 # Develop
