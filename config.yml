@@ -109,5 +109,3 @@ loaders:
       - http://frontend/addtocart
       - http://frontend/addtocart
       - http://frontend/checkout
-      - closeDoor
-      - { ... }
