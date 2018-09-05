@@ -73,13 +73,23 @@ function queryDatabase($url) {
 }
 
 function processCall($call) {
+
+  $remoteTimeout = false;
+  $catchExceptions = true;
+
   if(is_array($call)) {
     shuffle($call);
     $call = $call[0];
   }
   if(is_object($call)) {
-    if($call->probability * 100 <= rand(0, 100)) {
+    if(isset($call->probability) && $call->probability * 100 <= rand(0, 100)) {
       return $call->call." was not probable";
+    }
+    if(isset($call->remoteTimeout)) {
+      $remoteTimeout = $call->remoteTimeout;
+    }
+    if(isset($call->catchExceptions)) {
+      $catchExceptions = $call->catchExceptions;
     }
     $call = $call->call;
   }
@@ -100,7 +110,18 @@ function processCall($call) {
       $ch = curl_init();
       curl_setopt($ch, CURLOPT_URL, $call);
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-      return curl_exec($ch);
+      if(is_numeric($remoteTimeout)) {
+        curl_setopt($ch, CURLOPT_TIMEOUT_MS, $remoteTimeout);
+      }
+      curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+      $r = curl_exec($ch);
+      if(curl_errno($ch)) {
+        if(!$catchExceptions) {
+          throw new Exception(curl_error($ch), 500);
+        }
+        return curl_error($ch);
+      }
+      return $r;
   } elseif(startsWith($call, 'cache')) {
     $timeout = explode(',', $call)[1];
     return loadFromCache($timeout);
@@ -126,6 +147,11 @@ foreach ($endpoints as $key => $value) {
 if(property_exists($endpoints, $endpoint)) {
   try {
     $result = array_map(processCall, $endpoints->$endpoint);
+
+    if($_SERVER['CONTENT_TYPE'] && $_SERVER['CONTENT_TYPE'] === 'application/json') {
+      $withEum = false;
+    }
+
     if($withEum) {
       echo "<!doctype html><html lang=\"en\"><head><title>" . $name . "</title><script>window['adrum-start-time'] = new Date().getTime();window['adrum-config'] = ". json_encode($eumConfig) ."}</script><script src='//cdn.appdynamics.com/adrum/adrum-latest.js'></script><body>".json_encode($result);
     } else {

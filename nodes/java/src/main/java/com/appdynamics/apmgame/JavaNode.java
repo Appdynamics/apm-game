@@ -11,8 +11,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.StringReader;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.net.URL;
-import java.util.Scanner;
+import java.net.HttpURLConnection;
 import java.util.concurrent.ThreadLocalRandom;
 
 /*import org.ehcache.Cache;
@@ -99,7 +101,37 @@ public class JavaNode {
             return "Cache result: " + cache.get(element).toString();
         }
 
-        protected String processCall(String call) throws HttpException {
+        protected String callRemote(String call, boolean catchExceptions, int remoteTimeout) throws IOException {
+            try {
+                URL url = new URL(call);
+                // return new Scanner( url.openStream() ).useDelimiter( "\\Z" ).next();
+                HttpURLConnection con = (HttpURLConnection) url.openConnection();
+
+                con.setConnectTimeout(remoteTimeout);
+                con.setReadTimeout(remoteTimeout);
+                con.setRequestProperty("Content-Type", "application/json");
+
+                BufferedReader in = new BufferedReader(
+                        new InputStreamReader(con.getInputStream()));
+                String inputLine;
+                StringBuffer response = new StringBuffer();
+
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+
+                return response.toString();
+
+            } catch (IOException e) {
+                if(catchExceptions) {
+                    return e.getMessage();
+                }
+                throw e;
+            }
+        }
+
+        protected String processCall(String call, boolean catchExceptions, int remoteTimeout) throws IOException {
             if (call.startsWith("sleep")) {
                 int timeout = Integer.parseInt(call.split(",")[1]);
                 try {
@@ -121,21 +153,19 @@ public class JavaNode {
             }
 
             if (call.startsWith("http://")) {
-                try {
-                    URL url = new URL(call);
-                    return new Scanner( url.openStream() ).useDelimiter( "\\Z" ).next();
-                } catch (Exception e) {
-                    return e.getMessage();
-                }
+                return this.callRemote(call, catchExceptions, remoteTimeout);
             }
-
             if (call.startsWith("error")) {
                 throw new HttpException(500, "error");
             }
             return ":" + call + " is not supported";
         }
 
-        protected String preProcessCall(JsonValue call) throws HttpException {
+        protected String preProcessCall(JsonValue call) throws IOException {
+
+            boolean catchExceptions = true;
+            int remoteTimeout = Integer.MAX_VALUE;
+
             if (call.getValueType() == JsonValue.ValueType.ARRAY) {
                 JsonArray arr = (JsonArray) call;
                 int index = ThreadLocalRandom.current().nextInt(arr.size());
@@ -143,16 +173,24 @@ public class JavaNode {
             }
             if (call.getValueType() == JsonValue.ValueType.OBJECT) {
                 JsonObject obj = (JsonObject) call;
-                double probability = obj.getJsonNumber("probability").doubleValue();
                 call = obj.getJsonString("call");
-                if (probability * 100 < ThreadLocalRandom.current().nextInt(100)) {
-                    return call + " was not probable";
+                if(obj.containsKey("probability")) {
+                    double probability = obj.getJsonNumber("probability").doubleValue();
+                    if (probability * 100 < ThreadLocalRandom.current().nextInt(100)) {
+                        return call + " was not probable";
+                    }
                 }
-            }
-            return this.processCall(((JsonString) call).getString());
+                if(obj.containsKey("catchExceptions")) {
+                    catchExceptions = obj.getBoolean("catchExceptions");
+                }
+                if(obj.containsKey("remoteTimeout")) {
+                    remoteTimeout = obj.getInt("remoteTimeout");
+                }
+             }
+            return this.processCall(((JsonString) call).getString(), catchExceptions, remoteTimeout);
         }
 
-        public void handleEndpoint(HttpServletResponse response, JsonArray endpoint) throws IOException {
+        public void handleEndpoint(HttpServletResponse response, JsonArray endpoint, boolean withEum) throws IOException {
             response.setStatus(HttpServletResponse.SC_OK);
 
             StringBuilder result = new StringBuilder();
@@ -161,7 +199,7 @@ public class JavaNode {
                 result.append(this.preProcessCall(entry));
             }
 
-            if(NodeServlet.apmConfig.containsKey("eum")) {
+            if(withEum) {
                 response.getWriter().println("<!doctype html><html lang=\"en\"><head><title>" + NodeServlet.config.getString("name") + "</title><script>window['adrum-start-time'] = new Date().getTime();window['adrum-config'] = " + NodeServlet.apmConfig.getJsonObject("eum") + " </script><script src='//cdn.appdynamics.com/adrum/adrum-latest.js'></script><body>" + result);
             } else {
                 response.getWriter().println(result);
@@ -174,19 +212,30 @@ public class JavaNode {
                 IOException {
             String endpoint = request.getRequestURI().toString();
 
-            response.setContentType("text/html;charset=utf-8");
+            boolean withEum = NodeServlet.apmConfig.containsKey("eum");
+
+            String contentType = request.getContentType();
+            if (contentType == null) {
+                response.setContentType("text/html;charset=utf-8");
+            } else if(contentType == "application/json") {
+                response.setContentType(contentType);
+                withEum = false;
+            }
 
             try {
                 if (NodeServlet.endpoints.containsKey(endpoint)) {
-                    this.handleEndpoint(response, NodeServlet.endpoints.getJsonArray(endpoint));
+                    this.handleEndpoint(response, NodeServlet.endpoints.getJsonArray(endpoint), withEum);
                 } else if (NodeServlet.endpoints.containsKey(endpoint.substring(1))) {
-                    this.handleEndpoint(response, NodeServlet.endpoints.getJsonArray(endpoint.substring(1)));
+                    this.handleEndpoint(response, NodeServlet.endpoints.getJsonArray(endpoint.substring(1)), withEum);
                 } else {
                     response.setStatus(HttpServletResponse.SC_NOT_FOUND);
                     response.getWriter().println(404);
                 }
             } catch (HttpException e) {
                 response.setStatus(e.getCode());
+                response.getWriter().println(e.getMessage());
+            } catch (IOException e) {
+                response.setStatus(500);
                 response.getWriter().println(e.getMessage());
             }
         }

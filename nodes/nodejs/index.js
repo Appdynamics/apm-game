@@ -111,6 +111,11 @@ function loadFromCache(timeout, txn) {
 
 function processCall(call, req) {
   return new Promise(function(resolve, reject) {
+
+    var remoteTimeout = Number.MAX_SAFE_INTEGER
+
+    var catchExceptions = true
+
     // If call is an array, select one element as call
     if (Array.isArray(call)) {
       call = call[Math.floor(Math.random() * call.length)]
@@ -124,6 +129,12 @@ function processCall(call, req) {
         if(call.hasOwnProperty('schedule') && !cronmatch.match(call.schedule, new Date())) {
           resolve(`${call.call} was not scheduled`)
           return
+        }
+        if(call.hasOwnProperty('remoteTimeout')) {
+          remoteTimeout = call.remoteTimeout
+        }
+        if(call.hasOwnProperty('catchExceptions')) {
+          catchExceptions = call.catchExceptions
         }
         call = call.call
     }
@@ -140,12 +151,23 @@ function processCall(call, req) {
       var [_,timeout] = call.split(',')
       resolve(buildResponse(timeout))
     } else if (call.startsWith('http://')) {
-      http.get(call, function(res, req) {
+      console.log()
+
+      var opts = Object.assign(url.parse(call), {'headers': {'Content-Type': 'application/json'}})
+
+      var r = http.get(opts, function(res, req) {
         const body = [];
         res.on('data', (chunk) => body.push(chunk));
         res.on('end', () => resolve(body.join('')));
       }).on('error', function(err) {
-        resolve(err)
+        if(catchExceptions) {
+          resolve(err)
+        } else {
+          reject(err)
+        }
+      })
+      r.setTimeout(remoteTimeout, function() {
+        reject({code: 500, message: "Read timed out"})
       })
     } else if (call.startsWith('image')) {
       var [_,src] = call.split(',')
@@ -191,7 +213,9 @@ function processRequest(req, res, params) {
     })
     Promise.all(promises).then(function(results) {
 
-      if(withEum) {
+      var contype = req.headers['content-type'];
+
+      if( (!contype || contype.indexOf('application/json') !== 0) && withEum) {
         res.send(`<!doctype html><html lang="en"><head><title>${config.name}</title><script>window['adrum-start-time'] = new Date().getTime();window['adrum-config'] = ${JSON.stringify(eumConfig)}</script><script src='//cdn.appdynamics.com/adrum/adrum-latest.js'></script><body>${JSON.stringify(results)}`)
       } else {
         res.send(results)

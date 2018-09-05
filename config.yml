@@ -29,12 +29,23 @@ services:
   backend:
     type: java
     agent: yes
+    port: 3009
     endpoints:
       http:
         /cart/checkout:
           - cache,1024
-          - [http://ext-payment-1/pay, http://ext-payment-2/pay, http://ext-payment-3/pay, http://ext-payment-1/pay, http://ext-payment-2/pay, http://ext-payment-1/pay]
-
+          - - call: http://ext-payment-1/pay
+              remoteTimeout: 2000
+            - call: http://ext-payment-2/pay
+              remoteTimeout: 2000
+            - call: http://ext-payment-3/pay
+              remoteTimeout: 2000
+            - call: http://ext-payment-1/pay
+              remoteTimeout: 2000
+            - call: http://ext-payment-2/pay
+              remoteTimeout: 2000
+            - call: http://ext-payment-1/pay
+              remoteTimeout: 2000
         /cart/add:
           - cache,128
           - call: slow,800

@@ -5,7 +5,7 @@ DOCKER_NETWORK="${DOCKER_PREFIX}network"
 
 CONFIG=$1
 
-if [ ! -f ${CONFIG} ]
+if [ ! -f "${CONFIG}" ]
 then
 	CONFIG=config.yml
 fi;
@@ -18,6 +18,7 @@ fi;
 for DIR in nodes/*;
 do
   if [ -d $DIR ] ; then
+    echo "Building ${DOCKER_PREFIX}`basename $DIR`..."
     docker build -t "${DOCKER_PREFIX}`basename $DIR`" $DIR;
   fi
 done;
