@@ -4,8 +4,9 @@ Let the APM games begin! Have you ever had the evenings, where you wanted to pla
 
 - Build *interactive demos* where your audiance can interact with AppDynamics themselves following your guidance.
 - Heavily inspired by demosim, you can build custom demos, if [DemoMonkey](https://github.com/Appdynamics/demomonkey/) does not fit all your needs.
+- Create custom screenshots for your presentations, articels, mails, ...
 - Show customers after a TDD, how their future implementation of AppDynamics might look like.
-- ...
+
 
 # Installation
 
@@ -108,6 +109,7 @@ A service can have the following properties:
 - **port**: Set a port which will be exposed to your docker host. So if you run locally, you can access this service via `http://localhost:<port>
 - **endpoints** (java, nodejs, php only): Define multiple endpoints for this service. Read below to learn how to define endpoints.
 - **aliases**: Provide a list of network name aliases. This is useful for agentless services, that serve as multiple remote services, e.g. multiple payment providers.
+- **options** (nodejs only): For nodejs you can set an option called `connectionDelay`, that will force the webserver to wait the given number of milliseconds before it accepts a connection.
 - **disabled**: Set this to `yes` to temporarily disable the service without removing it from the configuration file.
 - **databases** (mysql only): Define multiple databases, that are created on startup on this database service. Read below to learn how to define databases and tables.
 
@@ -178,13 +180,16 @@ The example above first executes a call to another service, called backend, then
   - `sleep,<timeout>`: Stop processing for `<timeout>` milliseconds. Note, that the call graph will contain a language-specific `sleep` method, so use it especially with agent-less services and prefer `slow` for those having an agent.
   - `slow,<timeout>`: Slow down processing by around `<timeout>` milliseconds. The timeout is not accurate, so it will most of the time longer than the value given in `<timeout>`.
   - `cache,<timeout>`: Call a remote service of type cache. For Java this is ehcache2, for PHP and nodejs there is no real cache implementation, but they will tell you that a redis service was called.
+  - `error,<code>,<message>`: Throw an error with HTTP code `<code>` and message `<message>`.  
   - `image,<URL>`: Put an `<img src=<URL>>` on the result page. This can be used to slow down end user responses.
-  - `error,<code>,<message>`: Throw an error with HTTP code `<code>` and message `<message>`.
-
+  - `script,<URL>`: Put an `<script src=<<URL>>` on the result page. This can be used to delay the document building time.
+  - `ajax,<URL>`: Put an ajax call to <URL> in the result page.
 
 - **Modifiers** change the behaviour of a call. To use them provide an object notation for your call. As you can see in the example above, you can combine modifiers as you like:
   - `probability: <value>`: Execute this line of code with the probability of `<value>`. Provide a float for `<value>` between 0 and 1, where 0 means 0% and 1 means 100%.  
   - `schedule: <cron>` (only nodejs): Execute this line of code, only if the given `<cron>` expression is matched. If you provide an expression with five fields, it is assumed that you start with minutes. If you provide seven fields, the first is assumed to be seconds and the last is assumed to be years.
+  - `catchExceptions: <true|false>`: Use this for http requests to throw an exception if the downstream call failed, instead of ignoring them (default: true)
+  - `remoteTimeout': <value>`: Use this for http requests to define a timeout in milliseconds. After this time the connection will be terminated and an exception will be thrown.
 
 
 ### Databases
@@ -232,4 +237,16 @@ Note, that for each sequence of requests a `unique_session_id` is generated and 
 
 If you'd like to contribute to this project, feel free to provide issues or pull requests.
 
-If you'd like to add a node type for a specific language, look into the existing one, to see how they are structured.
+If you'd like to advance a node type, use the `run.sh` provided for each, to have a local version running. By default it will use the file `frontend.json` and `appdynamics.json` as configuration.
+
+The easiest way to add functionality, is adding a new "command". For example, if you want to add a `noop` command for nodejs add the following code in the if-elseif-else-block:
+
+```javascript
+...
+} else if (call.startsWith('noop')) {  
+  resolve('')
+}
+...
+```
+
+If you want to add a new node type, create a new folder with a Dockerfile and all the other things that you might require. Check the `nodejs`, the `php` or the `java` implementation to get some insights.
