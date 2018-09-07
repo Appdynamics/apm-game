@@ -1,9 +1,14 @@
 {
   "type": "nodejs",
   "agent": "yes",
+  "options": {
+    "connectionDelay": 500
+  },
   "endpoints": {
     "http": {
-      "/checkout": ["http://backend/cart/checkout", "image,http://cdn/logo.png"],
+      "/logo.png": ["sleep,1000"],
+      "/script.js": ["sleep,5000"],
+      "/checkout": ["http://backend/cart/checkout", "image,logo.png", "script,script.js","ajax,cache"],
       "/addtocart": ["http://backend/cart/add", "slow,1500"],
       "/cache": [["sleep,5000","sleep,5"], "cache,1024"],
       "/db": ["sql://osxltsneum.fritz.box/shop?query=INSERT INTO carts(name,value) VALUES(test,123)"],

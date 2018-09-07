@@ -1,6 +1,7 @@
 const process = require('process')
 const url = require('url')
 
+
 const config = JSON.parse(process.env.APP_CONFIG)
 const apm = JSON.parse(process.env.APM_CONFIG)
 
@@ -54,6 +55,7 @@ const morgan = require('morgan')
 const http = require('http')
 const cronmatch = require('cronmatch')
 var bodyParser = require('body-parser');
+const sleep = require('sleep');
 
 const app = express()
 
@@ -172,6 +174,12 @@ function processCall(call, req) {
     } else if (call.startsWith('image')) {
       var [_,src] = call.split(',')
       resolve(`<img src='${src}' />`)
+    } else if (call.startsWith('script')) {
+      var [_,src] = call.split(',')
+      resolve(`<script src='${src}?output=javascript'></script>`)
+    } else if (call.startsWith('ajax')) {
+      var [_,src] = call.split(',')
+      resolve(`<script>var o = new XMLHttpRequest();o.open('GET', '${src}');o.send();</script>`)
     } else if (call.startsWith('cache')) {
       var [_,timeout] = call.split(',')
       var txn = appdynamics.getTransaction(req);
@@ -215,7 +223,9 @@ function processRequest(req, res, params) {
 
       var contype = req.headers['content-type'];
 
-      if( (!contype || contype.indexOf('application/json') !== 0) && withEum) {
+      if( req.query.output && req.query.output === 'javascript') {
+        res.send(results)
+      } else if( (!contype || contype.indexOf('application/json') !== 0) && withEum) {
         res.send(`<!doctype html><html lang="en"><head><title>${config.name}</title><script>window['adrum-start-time'] = new Date().getTime();window['adrum-config'] = ${JSON.stringify(eumConfig)}</script><script src='//cdn.appdynamics.com/adrum/adrum-latest.js'></script><body>${JSON.stringify(results)}`)
       } else {
         res.send(results)
@@ -238,7 +248,13 @@ app.post('/**', function(req, res) {
   processRequest(req, res, req.body)
 })
 
-app.listen(port, () => console.log(
+var server = app.listen(port, () => console.log(
   `Running ${config.name} (type: ${config.type}) on port ${port} with${config.agent === 'yes'
   ? ` agent, reporting to ${apm.controller}`
   : 'out agent'}`))
+
+if(config.hasOwnProperty('options') && config.options.hasOwnProperty('connectionDelay')) {
+  server.on('connection', (socket) => {
+    sleep.msleep(config.options.connectionDelay)
+  })
+}

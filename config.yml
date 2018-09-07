@@ -23,6 +23,7 @@ services:
           - http://backend/cart/checkout
           - cache,128
           - image,http://cdn/logo.png
+          - script,http://cdn/scrips.js
         /addtocart:
           - [http://backend/cart/add, http://backend-v2/cart/add, http://backend-v3/cart/add]
           - image,http://cdn/logo.png
@@ -98,6 +99,8 @@ services:
     type: nodejs
     agent: no
     port: 3002
+    options:
+      connectionDelay: 5000
     endpoints:
       http:
         logo.png:
