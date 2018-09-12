@@ -104,11 +104,11 @@ In this section you provide all the tiers/nodes and remote services that are con
 
 A service can have the following properties:
 
-- **type** (required): Define the type of this service. You can currently use the following: `java`, `nodejs`, `php` and `mysql`.
+- **type** (required): Define the type of this service. You can currently use the following: `java`, `nodejs`, `php` and `mysql`. **Hint**: Prefer nodejs for agentless services and also if you want to build a big environment, since it comes with the lowest overhead.
 - **agent**: Set to `no` or `yes` to disable or enable the appdynamics agent.
 - **port**: Set a port which will be exposed to your docker host. So if you run locally, you can access this service via `http://localhost:<port>
 - **endpoints** (java, nodejs, php only): Define multiple endpoints for this service. Read below to learn how to define endpoints.
-- **aliases**: Provide a list of network name aliases. This is useful for agentless services, that serve as multiple remote services, e.g. multiple payment providers.
+- **aliases**: Provide a list of network name aliases. This is useful for agentless services, that serve as multiple remote services, e.g. multiple payment providers. **Hint**: You can use any name for an alias, even some existing domain names (e.g. www.appdynamics.com)!
 - **options** (nodejs only): For nodejs you can set an option called `connectionDelay`, that will force the webserver to wait the given number of milliseconds before it accepts a connection.
 - **disabled**: Set this to `yes` to temporarily disable the service without removing it from the configuration file.
 - **databases** (mysql only): Define multiple databases, that are created on startup on this database service. Read below to learn how to define databases and tables.
@@ -121,6 +121,8 @@ services:
     type: nodejs
     agent: yes
     port: 3000
+    options:
+      connectionDelay: 500
     endpoints:
       ...
   backend:
@@ -189,7 +191,7 @@ The example above first executes a call to another service, called backend, then
   - `probability: <value>`: Execute this line of code with the probability of `<value>`. Provide a float for `<value>` between 0 and 1, where 0 means 0% and 1 means 100%.  
   - `schedule: <cron>` (only nodejs): Execute this line of code, only if the given `<cron>` expression is matched. If you provide an expression with five fields, it is assumed that you start with minutes. If you provide seven fields, the first is assumed to be seconds and the last is assumed to be years.
   - `catchExceptions: <true|false>`: Use this for http requests to throw an exception if the downstream call failed, instead of ignoring them (default: true)
-  - `remoteTimeout': <value>`: Use this for http requests to define a timeout in milliseconds. After this time the connection will be terminated and an exception will be thrown.
+  - `remoteTimeout: <value>`: Use this for http requests to define a timeout in milliseconds. After this time the connection will be terminated and an exception will be thrown.
 
 
 ### Databases
@@ -209,7 +211,6 @@ Services with type mysql can be setup with multiple databases and tables. Provid
 ```
 
 For the example above two databases are generated, shop and fulfilment, and within the shop database there are two tables, carts and customers with the given columns. All columns are generated as `VARCHAR(255)`, except id which is used as primary key.
-
 
 ## Loaders
 
@@ -249,4 +250,4 @@ The easiest way to add functionality, is adding a new "command". For example, if
 ...
 ```
 
-If you want to add a new node type, create a new folder with a Dockerfile and all the other things that you might require. Check the `nodejs`, the `php` or the `java` implementation to get some insights.
+If you want to add a new node type, create a new folder with a Dockerfile and all the other things that you might require. Check the `nodejs`, `php`, `java` or `mysql` implementation to get some insights.
