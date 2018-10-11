@@ -170,6 +170,10 @@ The *call sequences* below each endpoint are the simulated logic of your busines
           - call: error,500,Aborted
             probability: 0.1
             schedule: "* */2 * * * * *"
+            - call: data
+              id: price
+              type: int
+              value: [32,16,8]
           - ...
 ...
 ```
@@ -186,6 +190,11 @@ The example above first executes a call to another service, called backend, then
   - `image,<URL>`: Put an `<img src=<URL>>` on the result page. This can be used to slow down end user responses.
   - `script,<URL>`: Put an `<script src=<<URL>>` on the result page. This can be used to delay the document building time.
   - `ajax,<URL>`: Put an ajax call to <URL> in the result page.
+  - `data` (only java): This is a special command to add data to a snapshot/transaction analytics. It is only available in object notation and has the following attributes:
+    - `call`: Always set to `data`
+    - `id`: A unique identifier for this data point. This will be used by AppDynamics in the snapshot/analytics view. 
+    - `type`: The type of this data point. Possible values are `string`, `int` and `double`
+    - `value`: The value of the data point. Use a single value or an array to add some randomness.
 
 - **Modifiers** change the behaviour of a call. To use them provide an object notation for your call. As you can see in the example above, you can combine modifiers as you like:
   - `probability: <value>`: Execute this line of code with the probability of `<value>`. Provide a float for `<value>` between 0 and 1, where 0 means 0% and 1 means 100%.  

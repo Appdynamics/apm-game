@@ -52,6 +52,10 @@ services:
           - call: slow,800
             probability: 0.1
           - image,http://cdn/logo.png
+          - call: data
+            id: price
+            type: double
+            value: [1,2,3]
   backend-v2:
     type: java
     agent: yes

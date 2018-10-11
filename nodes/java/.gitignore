@@ -2,3 +2,4 @@
 AppServerAgent-*
 *.class
 target/maven-*
+javaagent.jar

@@ -20,6 +20,12 @@
         "call": "http://localhost:8000/cache",
         "catchExceptions": false,
         "remoteTimeout": 2000
+      }],
+      "/data": ["sleep,50", {
+        "call": "data",
+        "id": "price",
+        "type": "double",
+        "value": [1,2,3]
       }]
     }
   },

@@ -16,12 +16,12 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.HttpURLConnection;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.HashSet;
 
-/*import org.ehcache.Cache;
-import org.ehcache.CacheManager;
-import org.ehcache.config.builders.CacheManagerBuilder;
-import org.ehcache.config.builders.CacheConfigurationBuilder;
-import org.ehcache.config.builders.ResourcePoolsBuilder;*/
+import com.appdynamics.apm.appagent.api.AgentDelegate;
+import com.appdynamics.apm.appagent.api.DataScope;
+import com.appdynamics.apm.appagent.api.ITransactionDemarcator;
+import com.appdynamics.apm.appagent.api.IMetricAndEventReporter;
 
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
@@ -29,11 +29,19 @@ import net.sf.ehcache.CacheManager;
 public class JavaNode {
 
     protected static Cache cache;
+    private static ITransactionDemarcator delegate = AgentDelegate.getTransactionDemarcator();
+    private static IMetricAndEventReporter metricAndEventReporter = AgentDelegate.getMetricAndEventPublisher();
+
+    private static HashSet<DataScope> allScopes;
 
     public static void main(String[] args) throws Exception {
 
         int port = 8080;
         CacheManager cacheManager;
+
+        allScopes = new HashSet<DataScope>();
+        allScopes.add(DataScope.SNAPSHOTS);
+        allScopes.add(DataScope.ANALYTICS);
 
         if (args.length > 0) {
             port = Integer.parseInt(args[0]);
@@ -158,7 +166,61 @@ public class JavaNode {
             if (call.startsWith("error")) {
                 throw new HttpException(500, "error");
             }
+            if (call.startsWith("image")) {
+                String src = call.split(",")[1];
+                return "<img src='"+src+"' />";
+            }
+            if (call.startsWith("script")) {
+                String src = call.split(",")[1];
+                return "<script src='"+src+"?output=javascript'></script>";
+            }
+            if (call.startsWith("ajax")) {
+                String src = call.split(",")[1];
+                return "<script>var o = new XMLHttpRequest();o.open('GET', '"+src+"');o.send();</script>";
+            }
             return ":" + call + " is not supported";
+        }
+
+        protected String processIntData(String id, long value) {
+            return metricAndEventReporter.addSnapshotData(id, value, allScopes) ? id + " data added" : id + " data not added";
+        }
+
+        protected String processDoubleData(String id, double value) {
+            return metricAndEventReporter.addSnapshotData(id, value, allScopes) ? id + " data added" : id + " data not added";
+        }
+
+        protected String processStringData(String id, String value) {
+            return metricAndEventReporter.addSnapshotData(id, value, allScopes) ? id + " data added" : id + " data not added";
+        }
+
+        protected String processData(JsonObject data) {
+            if(!data.containsKey("id")) {
+                return "Data not processed: No id provided";
+            }
+
+            if(!data.containsKey("value")) {
+                return "Data not processed: No value provided";
+            }
+
+            String id = data.getString("id");
+            String type = data.containsKey("type")  ? data.getString("type").toLowerCase() : "string";
+
+            JsonValue value = data.get("value");
+
+            if (value.getValueType() == JsonValue.ValueType.ARRAY) {
+                JsonArray arr = (JsonArray) value;
+                int index = ThreadLocalRandom.current().nextInt(arr.size());
+                value = arr.get(index);
+            }
+
+            switch(type) {
+                case "int":
+                    return processIntData(id, ((JsonNumber)value).longValue());
+                case "double":
+                    return processDoubleData(id, ((JsonNumber)value).doubleValue());
+                default:
+                    return processStringData(id, ((JsonString)value).getString());
+            }
         }
 
         protected String preProcessCall(JsonValue call) throws IOException {
@@ -174,6 +236,11 @@ public class JavaNode {
             if (call.getValueType() == JsonValue.ValueType.OBJECT) {
                 JsonObject obj = (JsonObject) call;
                 call = obj.getJsonString("call");
+
+                if(((JsonString) call).getString().startsWith("data")) {
+                    return this.processData(obj);
+                }
+
                 if(obj.containsKey("probability")) {
                     double probability = obj.getJsonNumber("probability").doubleValue();
                     if (probability * 100 < ThreadLocalRandom.current().nextInt(100)) {
@@ -210,17 +277,23 @@ public class JavaNode {
         protected void doGet(HttpServletRequest request,
                              HttpServletResponse response) throws ServletException,
                 IOException {
-            String endpoint = request.getRequestURI().toString();
+            String endpoint = request.getRequestURI();
 
             boolean withEum = NodeServlet.apmConfig.containsKey("eum");
 
             String contentType = request.getContentType();
-            if (contentType == null) {
-                response.setContentType("text/html;charset=utf-8");
-            } else if(contentType == "application/json") {
+
+            if("application/json".equals(contentType) || "javascript".equals(request.getParameter("output"))) {
                 response.setContentType(contentType);
                 withEum = false;
+            } else if (contentType == null) {
+                response.setContentType("text/html;charset=utf-8");
             }
+
+            if(request.getParameter("uniqueSessionId") != null) {
+                metricAndEventReporter.addSnapshotData("uniqueSessionId", request.getParameter("uniqueSessionId"), allScopes);
+            }
+
 
             try {
                 if (NodeServlet.endpoints.containsKey(endpoint)) {

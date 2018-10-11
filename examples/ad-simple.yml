@@ -1,0 +1,64 @@
+apm:
+  controller: http://localhost:8090
+  accountName: customer1
+  accountAccessKey:
+  applicationName: AD-Simple
+  eventsService: http://localhost:9080
+  globalAccountName:
+  eum:
+    appKey: ''
+    adrumExtUrlHttp: 'http://cdn.appdynamics.com'
+    adrumExtUrlHttps: 'https://cdn.appdynamics.com'
+    beaconUrlHttp: 'http://col.eum-appdynamics.com'
+    beaconUrlHttps: 'https://col.eum-appdynamics.com'
+
+services:
+  frontend:
+    type: java
+    agent: yes
+    port: 3000
+    endpoints:
+      http:
+        /upload:
+          - http://processing/magicByte
+          - http://processing/virus
+  processing:
+    type: java
+    agent: yes
+    endpoints:
+      http:
+        /magicByte:
+          - cache,128
+          - call: data
+            id: magicByteCheck
+            type: string
+            value: [yes,no]
+        /virus:
+          - http://virus-scanner/scan
+          - call: data
+            id: virusFoundScore
+            type: int
+            value: [0,1,5,10]
+  virus-scanner:
+    type: nodejs
+    agent: no
+    port: 3001
+    endpoints:
+      http:
+        scan:
+          - sleep,1500
+          - call: error,500,Scan failed
+            probability: 0.1
+          - sleep,500
+
+
+loaders:
+  browser:
+    type: phantomjs
+    wait: 15
+    count: 3
+    adrumTimeout: 5
+    urls:
+      - http://frontend/upload
+      - http://frontend/upload
+      - http://frontend/upload

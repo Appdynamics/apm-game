@@ -46,6 +46,13 @@
             <artifactId>slf4j-simple</artifactId>
             <version>1.7.25</version>
         </dependency>
+        <dependency>
+            <groupId>com.appdynamics</groupId>
+            <artifactId>appdynamics</artifactId>
+            <version>4.5</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/javaagent.jar</systemPath>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
