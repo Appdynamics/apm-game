@@ -1,7 +1,8 @@
 #!/bin/bash
 
-DOCKER_PREFIX="svrnm/apm-game-"
-DOCKER_NETWORK="${DOCKER_PREFIX}network"
+DOCKER_PREFIX="apm-game/"
+DOCKER_SUFFIX="${RANDOM}-${RANDOM}"
+DOCKER_NETWORK="${DOCKER_PREFIX}network-${DOCKER_SUFFIX}"
 
 CONFIG=$1
 
@@ -34,6 +35,6 @@ docker build -t "${DOCKER_PREFIX}machine" machine;
 
 docker network create ${DOCKER_NETWORK}
 
-node master/index.js ${CONFIG} ${DOCKER_PREFIX} ${DOCKER_NETWORK}
+node master/index.js ${CONFIG} ${DOCKER_PREFIX} ${DOCKER_NETWORK} ${DOCKER_SUFFIX}
 
 docker network rm ${DOCKER_NETWORK}

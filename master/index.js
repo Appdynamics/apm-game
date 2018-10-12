@@ -7,6 +7,7 @@ const shellescape = require('shell-escape')
 
 const dockerPrefix = process.argv[3]
 const dockerNetwork = process.argv[4]
+const dockerSuffix = process.argv[5]
 
 var containers = []
 
@@ -47,7 +48,7 @@ try {
                                   '-e', `APM_CONFIG=${JSON.stringify(apm)}`,
                                   '-e', `WITH_AGENT=${service.agent === 'yes'?1:0}`,
                                   '--network', dockerNetwork,
-                                  '--name', name,
+                                  '--name', `${name}-${dockerSuffix}`,
                                   '--rm'
                 ]
       if(Array.isArray(service.aliases)) {
@@ -87,7 +88,7 @@ try {
         shell: true
       })
 
-      containers.push(name)
+      containers.push(`${name}-${dockerSuffix}`)
     }
   })
 
@@ -111,7 +112,7 @@ try {
 
     for(var i = 0; i < loader.count; i++) {
 
-      const containerName = `${name}-${i}`
+      const containerName = `${name}-${i}-${dockerSuffix}`
 
       const dockerImage = dockerPrefix + loader.type
 
@@ -138,7 +139,7 @@ try {
     }
   })
 
-  var machineAgentName = 'machine-agent'
+  var machineAgentName = `machine-agent-${dockerSuffix}`
   var machineAgentCmd = ['docker', 'run', '-e', `APPDYNAMICS_CONTROLLER_HOST_NAME=${controller.hostname}`,
                                           '-e', `APPDYNAMICS_CONTROLLER_PORT=${controller.port}`,
                                           '-e', `APPDYNAMICS_CONTROLLER_SSL_ENABLED=${controller.protocol.startsWith('https')}`,
