@@ -5,9 +5,9 @@ const {spawn} = require('child_process')
 const url = require('url');
 const shellescape = require('shell-escape')
 
-const dockerPrefix = process.argv[3]
+const imagePrefix = process.argv[3]
 const dockerNetwork = process.argv[4]
-const dockerSuffix = process.argv[5]
+const containerPrefix = process.argv[5]
 
 var containers = []
 
@@ -40,7 +40,7 @@ try {
     }
 
     if(!service.disabled) {
-      const dockerImage = dockerPrefix + service.type
+      const dockerImage = imagePrefix + service.type
 
       console.log('==== Starting ' + name)
 
@@ -48,12 +48,23 @@ try {
                                   '-e', `APM_CONFIG=${JSON.stringify(apm)}`,
                                   '-e', `WITH_AGENT=${service.agent === 'yes'?1:0}`,
                                   '--network', dockerNetwork,
-                                  '--name', `${name}-${dockerSuffix}`,
+                                  '--name', `${containerPrefix}-${name}`,
+                                  '--log-opt', 'labels=container-type,service-type,service-name',
+                                  '--label', 'container-type=service',
+                                  '--label', `service-name=${name}`,
+                                  '--label', `service-type=${service.type}`,
+                                  '--label', `with-agent=${service.agent === 'yes'?'yes':'no'}`,
                                   '--rm'
                 ]
       if(Array.isArray(service.aliases)) {
         service.aliases.forEach(function(alias) {
           cmd.push('--network-alias=' + alias)
+        })
+      }
+
+      if(service.hasOwnProperty('labels') && typeof service.labels === 'object') {
+        Object.keys(service.labels).forEach(function(label) {
+          cmd.push('--label', `${label}=${service.labels[label]}`)
         })
       }
 
@@ -77,8 +88,8 @@ try {
       }
 
       if(typeof service.port === 'number') {
-          cmd.push('-p')
-          cmd.push(`${service.port}:80`)
+          cmd.push('-p', `${service.port}:80`)
+          cmd.push('--label', `service-port=${service.port}`)
       }
 
       cmd.push(dockerImage)
@@ -88,7 +99,7 @@ try {
         shell: true
       })
 
-      containers.push(`${name}-${dockerSuffix}`)
+      containers.push(`${containerPrefix}-${name}`)
     }
   })
 
@@ -112,14 +123,17 @@ try {
 
     for(var i = 0; i < loader.count; i++) {
 
-      const containerName = `${name}-${i}-${dockerSuffix}`
+      const containerName = `${containerPrefix}-${name}-${i}`
 
-      const dockerImage = dockerPrefix + loader.type
+      const dockerImage = imagePrefix + loader.type
 
       var cmd = ['docker', 'run', '-e', `LOAD_CONFIG=${JSON.stringify(loader)}`,
                                   '-e', `APM_CONFIG=${JSON.stringify(apm)}`,
                                   '--network', dockerNetwork,
                                   '--name', containerName,
+                                  '--log-opt', 'labels=apm-game-type,loader-type',
+                                  '--label', 'container-type=loader',
+                                  '--label', `loader-type=${loader.type}`,
                                   '--rm'
                 ]
 
@@ -139,15 +153,19 @@ try {
     }
   })
 
-  var machineAgentName = `machine-agent-${dockerSuffix}`
+  var machineAgentName = `${containerPrefix}-machine-agent`
   var machineAgentCmd = ['docker', 'run', '-e', `APPDYNAMICS_CONTROLLER_HOST_NAME=${controller.hostname}`,
                                           '-e', `APPDYNAMICS_CONTROLLER_PORT=${controller.port}`,
                                           '-e', `APPDYNAMICS_CONTROLLER_SSL_ENABLED=${controller.protocol.startsWith('https')}`,
                                           '-e', `APPDYNAMICS_AGENT_ACCOUNT_NAME=${apm.accountName}`,
                                           '-e', `APPDYNAMICS_AGENT_ACCOUNT_ACCESS_KEY=${apm.accountAccessKey}`,
+                                          '-e', `APPDYNAMICS_ANALYTICS_AGENT_NAME=${imagePrefix}-${containerPrefix}-analytics-agent`,
                                           '-e', 'MACHINE_AGENT_PROPERTIES=-Dappdynamics.sim.enabled=true -Dappdynamics.docker.enabled=true',
                                           '-v', '/:/hostroot:ro',
                                           '-v', '/var/run/docker.sock:/var/run/docker.sock',
+                                          '-v', '/var/lib/docker/containers/:/var/lib/docker/containers/',
+                                          '--log-opt', 'labels=container-type',
+                                          '--label', 'container-type=machine-agent',
                                           '--rm',
                                           '--network', dockerNetwork,
                                           '--name', machineAgentName,
@@ -160,7 +178,7 @@ try {
     machineAgentCmd.push('-e', `APPDYNAMICS_ANALYTICS_GLOBAL_ACCOUNT_NAME=${apm.globalAccountName}`)
     machineAgentCmd.push('-e', `APPDYNAMICS_ANALYTICS_ACCESS_KEY=${apm.accountAccessKey}`)
   }
-  machineAgentCmd.push(dockerPrefix + 'machine')
+  machineAgentCmd.push(imagePrefix + 'machine')
 
   const child = spawn(shellescape(machineAgentCmd), {
                 stdio: 'inherit',

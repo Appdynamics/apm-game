@@ -3,5 +3,6 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+RUN chmod +x /app/node.sh
 EXPOSE 80
-CMD ["node", "index.js", "80"]
+CMD ["/app/node.sh"]

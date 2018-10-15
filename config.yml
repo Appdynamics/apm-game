@@ -15,6 +15,9 @@ apm:
 services:
   frontend:
     type: nodejs
+    labels:
+      version: 1.0
+      dc: WEST
     agent: yes
     port: 3000
     endpoints:
