@@ -40,7 +40,7 @@ try {
     }
 
     if(!service.disabled) {
-      const dockerImage = imagePrefix + service.type
+      const dockerImage = imagePrefix + '/' + service.type
 
       console.log('==== Starting ' + name)
 
@@ -125,7 +125,7 @@ try {
 
       const containerName = `${containerPrefix}-${name}-${i}`
 
-      const dockerImage = imagePrefix + loader.type
+      const dockerImage = imagePrefix + '/' + loader.type
 
       var cmd = ['docker', 'run', '-e', `LOAD_CONFIG=${JSON.stringify(loader)}`,
                                   '-e', `APM_CONFIG=${JSON.stringify(apm)}`,
@@ -161,6 +161,7 @@ try {
                                           '-e', `APPDYNAMICS_AGENT_ACCOUNT_ACCESS_KEY=${apm.accountAccessKey}`,
                                           '-e', `APPDYNAMICS_ANALYTICS_AGENT_NAME=${imagePrefix}-${containerPrefix}-analytics-agent`,
                                           '-e', 'MACHINE_AGENT_PROPERTIES=-Dappdynamics.sim.enabled=true -Dappdynamics.docker.enabled=true',
+                                          '-e', `APPDYNAMICS_MACHINE_HIERARCHY_PATH=${imagePrefix}|${containerPrefix}|machine-agent`,
                                           '-v', '/:/hostroot:ro',
                                           '-v', '/var/run/docker.sock:/var/run/docker.sock',
                                           '-v', '/var/lib/docker/containers/:/var/lib/docker/containers/',
@@ -178,7 +179,7 @@ try {
     machineAgentCmd.push('-e', `APPDYNAMICS_ANALYTICS_GLOBAL_ACCOUNT_NAME=${apm.globalAccountName}`)
     machineAgentCmd.push('-e', `APPDYNAMICS_ANALYTICS_ACCESS_KEY=${apm.accountAccessKey}`)
   }
-  machineAgentCmd.push(imagePrefix + 'machine')
+  machineAgentCmd.push(imagePrefix + '/machine')
 
   const child = spawn(shellescape(machineAgentCmd), {
                 stdio: 'inherit',

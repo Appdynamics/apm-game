@@ -14,7 +14,7 @@ then
 	CONTAINER_PREFIX=`basename ${CONFIG%.yml}`
 fi
 
-IMAGE_PREFIX="apm-game/"
+IMAGE_PREFIX="apm-game"
 DOCKER_NETWORK="${CONTAINER_PREFIX}/network"
 
 IS_RUNNING=`docker ps -f name=${CONTAINER_PREFIX} -q`
@@ -34,19 +34,19 @@ fi
 for DIR in nodes/*;
 do
   if [ -d $DIR ] ; then
-    echo "Building ${IMAGE_PREFIX}`basename $DIR`..."
-    docker build -t "${IMAGE_PREFIX}`basename $DIR`" $DIR;
+    echo "Building ${IMAGE_PREFIX}/`basename $DIR`..."
+    docker build -t "${IMAGE_PREFIX}/`basename $DIR`" $DIR;
   fi
 done;
 
 for DIR in loaders/*;
 do
   if [ -d $DIR ] ; then
-    docker build -t "${IMAGE_PREFIX}`basename $DIR`" $DIR;
+    docker build -t "${IMAGE_PREFIX}/`basename $DIR`" $DIR;
   fi
 done;
 
-docker build -t "${IMAGE_PREFIX}machine" machine;
+docker build -t "${IMAGE_PREFIX}/machine" machine;
 
 docker network create ${DOCKER_NETWORK}
 
