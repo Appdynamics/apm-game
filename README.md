@@ -2,11 +2,32 @@
 
 Let the APM games begin! Have you ever had the evenings, where you wanted to play with your friends and families some rounds of identifying performance issues with [AppDynamics](https://www.appdynamics.com/), but missed the game to do that? -- Probably not, but here is **APM Games** anyhow, with some further use cases:
 
-- Build *interactive demos* where your audiance can interact with AppDynamics themselves following your guidance.
+- Build *interactive demos* where your audience can interact with AppDynamics themselves following your guidance.
 - Heavily inspired by demosim, you can build custom demos, if [DemoMonkey](https://github.com/Appdynamics/demomonkey/) does not fit all your needs.
-- Create custom screenshots for your presentations, articels, mails, ...
+- Create custom screenshots for your presentations, articles, mails, ...
+- Reconstruct issues to have a reproducible environment.
+- Test configurations before bringing them into your customer's environment.
 - Show customers after a TDD, how their future implementation of AppDynamics might look like.
 
+# Features
+
+APM Game implements and uses the following features of AppDynamics:
+
+- APM
+  - java
+  - nodejs
+  - php
+- User Experience
+  - BRUM
+- Databases
+  - mySQL
+- Analytics
+  - Transaction
+  - Browser Records
+  - Browser Sessions
+- Infrastructure
+  - Server Visibility
+  - Network Visibility
 
 # Installation
 
