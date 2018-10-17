@@ -1,0 +1,146 @@
+apm:
+  controller: http://localhost:8090
+  accountName: customer1
+  accountAccessKey:
+  applicationName: AD-Simple
+  eventsService: http://localhost:9080
+  globalAccountName:
+  eum:
+    appKey: ''
+    adrumExtUrlHttp: 'http://cdn.appdynamics.com'
+    adrumExtUrlHttps: 'https://cdn.appdynamics.com'
+    beaconUrlHttp: 'http://col.eum-appdynamics.com'
+    beaconUrlHttps: 'https://col.eum-appdynamics.com'
+
+services:
+  frontend:
+    type: nodejs
+    labels:
+      version: v1.0
+      dc: WEST
+    agent: yes
+    port: 3000
+    endpoints:
+      http:
+        /search:
+          - http://search/search
+        /news:
+          - http://news/news
+        /login:
+          - http://oauth/oauth
+        /fifa-2018-all-games:
+          - http://news/news
+          - http://quotes-engine/quote
+  search:
+    type: nodejs
+    agent: yes
+    endpoints:
+      http:
+        /search:
+          - http://bbs/bbs
+          - http://news/news
+          - http://yabs/yabs
+          - http://myab/myab
+          - http://elastic/ext
+  quotes-engine:
+    type: java
+    agent: yes
+    endpoints:
+      http:
+        /quote:
+          - http://aggregator/aggregate
+  aggregator:
+    type: java
+    agent: yes
+    endpoints:
+      http:
+        /aggregate:
+          - call: http://www.ad-soccer-games.com/games-slow
+            remoteTimeout: 5000
+          - slow,25
+          - call: http://www.sports-ad.com/games
+            remoteTimeout: 5000
+          - cache,128
+          - call: http://www.appd-football.com/games
+            remoteTimeout: 5000
+          - sleep,25
+  news:
+    type: nodejs
+    agent: yes
+    endpoints:
+      http:
+        /news:
+          - http://bbs/bbs
+          - http://elastic/ext
+          - http://news.ext.com/ext
+          - http://fakedb3/ext
+  oauth:
+    type: nodejs
+    agent: yes
+    endpoints:
+      http:
+        /oauth:
+          - cache,128
+          - sleep,5
+  bbs:
+    type: nodejs
+    agent: yes
+    endpoints:
+      http:
+        /bbs:
+          - cache,128
+          - sleep,25
+  yabs:
+    type: nodejs
+    agent: yes
+    endpoints:
+      http:
+        /yabs:
+          - http://fakedb1/ext
+          - http://fakedb2/ext
+          - sleep,5
+  myab:
+    type: nodejs
+    agent: yes
+    endpoints:
+      http:
+        /myab:
+          - sleep,5
+  ext:
+    type: nodejs
+    agent: no
+    aliases: [elastic,news.ext.com,www.ad-soccer-games.com,www.sports-ad.com,www.appd-football.com,fakedb1,fakedb2,fakedb3]
+    endpoints:
+      http:
+        ext:
+          - sleep,5
+        games:
+          - sleep,5
+        games-slow:
+          - sleep,5
+          - call: sleep,1000
+            schedule: "*/5 * * * *"
+            probability: 0.5
+          - call: sleep,1000
+            schedule: "*/5 * * * *"
+            probability: 0.5
+          - call: sleep,1000
+            schedule: "*/5 * * * *"
+            probability: 0.5
+          - call: sleep,7000
+            schedule: "5-15 * * * *"
+          - call: sleep,10000
+            schedule: "5-15 * * * *"
+            probability: 0.2
+
+loaders:
+  browser:
+    type: phantomjs
+    wait: 15
+    count: 3
+    adrumTimeout: 5
+    urls:
+      - http://frontend/login
+      - http://frontend/news
+      - http://frontend/search
+      - http://frontend/fifa-2018-all-games

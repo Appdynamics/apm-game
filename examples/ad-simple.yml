@@ -54,10 +54,9 @@ services:
 
 loaders:
   browser:
-    type: phantomjs
+    type: puppeteer
     wait: 15
     count: 3
-    adrumTimeout: 5
     urls:
       - http://frontend/upload
       - http://frontend/upload
