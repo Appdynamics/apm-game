@@ -76,6 +76,8 @@ try {
           cmd.push('-e', `APPDYNAMICS_AGENT_APPLICATION_NAME=${apm.applicationName}`)
           cmd.push('-e', `APPDYNAMICS_AGENT_ACCOUNT_NAME=${apm.accountName}`)
           cmd.push('-e', `APPDYNAMICS_AGENT_ACCOUNT_ACCESS_KEY=${apm.accountAccessKey}`)
+          cmd.push('-e', `APPDYNAMICS_NETVIZ_AGENT_HOST=192.168.144.6`)
+          cmd.push('-e', `APPDYNAMICS_NETVIZ_AGENT_PORT=3892`)
           cmd.push('-e', `APPDYNAMICS_AGENT_TIER_NAME=${name}`)
           cmd.push('-e', `APPDYNAMICS_AGENT_NODE_NAME=${name}`)
       }
@@ -193,17 +195,17 @@ try {
   var netvizAgentName = `${containerPrefix}-netviz-agent`
   // docker run -d --network=host --cap-add=NET_ADMIN --cap-add=NET_RAW
   var netvizAgentCmd = ['docker', 'run', '--rm',
-                                         '--network', 'host',
+                                         '--network=host',
                                          '--cap-add=NET_ADMIN',
                                          '--cap-add=NET_RAW',
                                          '--name', netvizAgentName,
-                                         '--network-alias=netviz-agent',
                                          imagePrefix + '/netviz']
 
   spawn(shellescape(netvizAgentCmd), {
                stdio: 'inherit',
                shell: true
   })
+
   containers.push(netvizAgentName)
 
 
