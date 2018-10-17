@@ -46,7 +46,8 @@ do
   fi
 done;
 
-docker build -t "${IMAGE_PREFIX}/machine" machine;
+docker build -t "${IMAGE_PREFIX}/machine" infrastructure/machine;
+docker build -t "${IMAGE_PREFIX}/netviz" infrastructure/netviz;
 
 docker network create ${DOCKER_NETWORK}
 

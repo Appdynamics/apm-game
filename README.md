@@ -27,7 +27,13 @@ mv <PATH>/appdynamics-php-agent-x64-linux-<VERSION>.tar.bz2 nodes/php
 mv <PATH>/AppServerAgent-<VERSION>.zip nodes/java
 ```
 
-**Note:** The agent for nodejs and the machine agent are installed automatically.
+**Note:** The agent for nodejs is installed automatically.
+
+The docker images for the machine and network visibility agent are downloaded from docker store. You need to login to download these:
+
+```shell
+docker login
+```
 
 Setup an [AppDynamics Platform](https://docs.appdynamics.com/display/latest/AppDynamics+Platform) or use your AppDynamics SaaS controller.
 
@@ -109,6 +115,7 @@ A service can have the following properties:
 - **port**: Set a port which will be exposed to your docker host. So if you run locally, you can access this service via `http://localhost:<port>
 - **endpoints** (java, nodejs, php only): Define multiple endpoints for this service. Read below to learn how to define endpoints.
 - **aliases**: Provide a list of network name aliases. This is useful for agentless services, that serve as multiple remote services, e.g. multiple payment providers. **Hint**: You can use any name for an alias, even some existing domain names (e.g. www.appdynamics.com)!
+- **labels**: You can provide a list of docker labels, that will be visible in the "container" view.
 - **options** (nodejs only): For nodejs you can set an option called `connectionDelay`, that will force the webserver to wait the given number of milliseconds before it accepts a connection.
 - **disabled**: Set this to `yes` to temporarily disable the service without removing it from the configuration file.
 - **databases** (mysql only): Define multiple databases, that are created on startup on this database service. Read below to learn how to define databases and tables.
@@ -119,6 +126,9 @@ Without endpoints and databases a configuration might look like the following:
 services:
   frontend:
     type: nodejs
+    labels:
+      version: v1.0
+      dc: FRA
     agent: yes
     port: 3000
     options:
@@ -192,7 +202,7 @@ The example above first executes a call to another service, called backend, then
   - `ajax,<URL>`: Put an ajax call to <URL> in the result page.
   - `data` (only java): This is a special command to add data to a snapshot/transaction analytics. It is only available in object notation and has the following attributes:
     - `call`: Always set to `data`
-    - `id`: A unique identifier for this data point. This will be used by AppDynamics in the snapshot/analytics view. 
+    - `id`: A unique identifier for this data point. This will be used by AppDynamics in the snapshot/analytics view.
     - `type`: The type of this data point. Possible values are `string`, `int` and `double`
     - `value`: The value of the data point. Use a single value or an array to add some randomness.
 
@@ -228,19 +238,20 @@ In this section you can provide multiple load giving services. The name you prov
 ```YAML
 loaders:
   browser:
-    type: phantomjs
+    type: puppeteer
     wait: 15
     count: 5
-    adrumTimeout: 5
     urls:
       - http://frontend/addtocart
       - http://frontend/addtocart
       - http://frontend/checkout
 ```
 
-Currently *APM Game* comes with two loaders: curl and phantomjs. Both take a list of `urls` and call them in the sequence given endlessly. By providing a `count` you can increase the number of docker instances that send load against your services. The `wait` parameter is used to delay the start of the load, so all your other services can be setup properly. For loaders of type `phantomjs` you can additionally provide a parameter `adrumTimeout`, that terminates a request waiting for the adrum beacon after the given time.
+Currently *APM Game* comes with three loaders: [curl](https://curl.haxx.se/), [puppeteer](https://pptr.dev/) and [phantomjs](http://phantomjs.org/). Both, puppeteer and phantomjs are headless browser, where puppeteer should be preferred. phantomjs might be deprecated in a later release.
 
-Note, that for each sequence of requests a `unique_session_id` is generated and send to the services as `GET` parameter. A node.js frontend is picking up this value automatically for snapshots and analytics data. For PHP and Java you need to configure the data collectors in the UI.
+All loaders take a list of `urls` and call them in the sequence given endlessly. By providing a `count` you can increase the number of docker instances that send load against your services. The `wait` parameter is used to delay the start of the load, so all your other services can be setup properly. For loaders of type `phantomjs` you can additionally provide a parameter `adrumTimeout`, that terminates a request waiting for the adrum beacon after the given time.
+
+Note, that for each sequence of requests a `unique_session_id` is generated and send to the services as `GET`/`POST` parameter. A node.js frontend is picking up this value automatically for snapshots and analytics data. For PHP and Java you need to configure the data collectors in the UI.
 
 
 # Develop

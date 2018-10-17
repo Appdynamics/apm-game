@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "puppeteer": "^1.9.0",
+    "uuid": "^3.3.2"
+  }
+}

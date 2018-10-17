@@ -49,6 +49,7 @@ try {
                                   '-e', `WITH_AGENT=${service.agent === 'yes'?1:0}`,
                                   '--network', dockerNetwork,
                                   '--name', `${containerPrefix}-${name}`,
+                                  '--network-alias=' + name,
                                   '--log-opt', 'labels=container-type,service-type,service-name',
                                   '--label', 'container-type=service',
                                   '--label', `service-name=${name}`,
@@ -131,6 +132,7 @@ try {
                                   '-e', `APM_CONFIG=${JSON.stringify(apm)}`,
                                   '--network', dockerNetwork,
                                   '--name', containerName,
+                                  `--network-alias=${name}+${i}`,
                                   '--log-opt', 'labels=apm-game-type,loader-type',
                                   '--label', 'container-type=loader',
                                   '--label', `loader-type=${loader.type}`,
@@ -170,6 +172,7 @@ try {
                                           '--rm',
                                           '--network', dockerNetwork,
                                           '--name', machineAgentName,
+                                          '--network-alias=machine-agent'
                                           ]
   if(apm.eventsService && apm.globalAccountName) {
     machineAgentCmd.push('-e', `WITH_ANALYTICS=1`)
@@ -181,12 +184,29 @@ try {
   }
   machineAgentCmd.push(imagePrefix + '/machine')
 
-  const child = spawn(shellescape(machineAgentCmd), {
+  spawn(shellescape(machineAgentCmd), {
                 stdio: 'inherit',
                 shell: true
   })
-
   containers.push(machineAgentName)
+
+  var netvizAgentName = `${containerPrefix}-netviz-agent`
+  // docker run -d --network=host --cap-add=NET_ADMIN --cap-add=NET_RAW
+  var netvizAgentCmd = ['docker', 'run', '--rm',
+                                         '--network', 'host',
+                                         '--cap-add=NET_ADMIN',
+                                         '--cap-add=NET_RAW',
+                                         '--name', netvizAgentName,
+                                         '--network-alias=netviz-agent',
+                                         imagePrefix + '/netviz']
+
+  spawn(shellescape(netvizAgentCmd), {
+               stdio: 'inherit',
+               shell: true
+  })
+  containers.push(netvizAgentName)
+
+
 } catch (e) {
   console.log(e);
 }
