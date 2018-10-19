@@ -1,0 +1,49 @@
+apm:
+  applicationName: apm-game-tutorial
+  controller:
+  accountName:
+  accountAccessKey:
+  eventsService:
+  globalAccountName: 
+
+services:
+  frontend:
+    type: java
+    agent: yes
+    endpoints:
+      http:
+        /list:
+          - http://backend/list/items
+          - cache,128
+  backend:
+    type: java
+    agent: yes
+    endpoints:
+      http:
+        /list/items:
+          - slow,524
+          - http://storage/item
+  new-frontend:
+    type: nodejs
+    agent: yes
+    endpoints:
+      http:
+        /list:
+          - http://backend/list/items
+          - cache,128
+  storage:
+    type: nodejs
+    agent: no
+    endpoints:
+      http:
+        /item:
+          - sleep,500
+
+loaders:
+  browser:
+    type: puppeteer
+    wait: 15
+    count: 1
+    urls:
+      - http://frontend/list
+      - http://new-frontend/list

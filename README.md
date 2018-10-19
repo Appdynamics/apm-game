@@ -58,6 +58,108 @@ docker login
 
 Setup an [AppDynamics Platform](https://docs.appdynamics.com/display/latest/AppDynamics+Platform) or use your AppDynamics SaaS controller.
 
+# Tutorial
+
+Before you go into the details of configuring your own environment, you can walk through this tutorial to get a quick understanding. Before you continue, follow the steps above to setup **APM Game** and your **AppDynamics Platform**.
+
+# Step 1 - Two java tiers
+
+Open the file `tutorial/step-1.yml` with your favourite editor and provide the credentials to your AppDynamics controller and events service. Next, execute
+`./run.sh tutorial/step-1.yml`. This script will first of all build all the docker files you need to run **APM Game**, next it will spin up some docker containers, check `docker ps` to see them coming up:
+
+```shell
+CONTAINER ID        IMAGE                            COMMAND                  CREATED             STATUS              PORTS               NAMES
+e961843209b3        apm-game/machine                 "/usr/local/bin/mach…"   3 minutes ago       Up 3 minutes                            step-1-machine-agent
+f0fb544fbb10        apm-game/java                    "/app/java.sh"           3 minutes ago       Up 3 minutes        80/tcp              step-1-frontend
+7cb66fd11dee        apm-game/puppeteer               "dumb-init -- node i…"   3 minutes ago       Up 3 minutes                            step-1-browser-0
+ffa7b6f2cc7d        apm-game/netviz                  "./start.sh"             3 minutes ago       Up 3 minutes                            step-1-netviz-agent
+40a3487c47e6        apm-game/java                    "/app/java.sh"           3 minutes ago       Up 3 minutes        80/tcp              step-1-backend
+```
+
+As you can see, there are two java nodes, but also the machine agent, the network visibility agent and one container running "puppeteer" which is a headless version of Google Chrome.
+
+If you now look into the AppDynamics UI, you will see your Business Application with two nodes (frontend, backend) and one BT (/list). You should also see both tiers on the "Network Dashboard". And finally if you enable Analytics for your application, you should get transaction events.
+
+Compare what you see with the `step-1.yml` file: There are two java services (frontend, backend). The frontend has a `/list` http endpoint, that calls the `/list/items` endpoint on the backend and also calls a cache for 128ms. The endpoint `/list/items` just idles 1024ms before it returns a response. Below you have a single loader using `puppeteer` that continously calls the `/list` endpoint on the frontend.
+
+Next, add a few additional functionality to your configuration. First stop the `run.sh` by pressing `Ctrl+C`, next add the following changes to your file:
+
+- Add another endpoint `/get` to the frontend tier, that calls `/get/item` on the backend. Do not define `/get/item` on the backend tier!
+- Add `port: 3000` to the frontend tier as option
+- Add the new endpoint `http://frontend/get` to the list of urls for the loader. Also increase the count of loaders to 3.
+
+Now, execute `./run.sh tutorial/step-1.yml` again. You should see the following results:
+
+- A new BT `/get`, that has a lot of error transactions
+- You can open `http://localhost:3000/get` in your browser and add manual load to your frontend tier.
+- The load should increase by a factor of 3
+
+## Step 2 - 3 Tiers and a backend
+
+Open `tutorial/step2.yml` and compare the content with `step1`. As you can see the setup is similar, but a few things are new:
+
+- A third tier *new-frontend* that is almost identical to the frontend, except that it has a different type (nodejs)
+- A fourth service called "storage", that runs without an agent.
+
+Spin up your environment by executing `./run.sh tutorial/step-2.yml`. Wait a few minutes and your flowmap should be updated: As expected, there is a new tier and a http remote service.
+
+Again, add some additional functionality to your configuration:
+
+- Add another tier *legacy-frontend* of type php that is identical to the other two frontends.
+- Add the option `aliases: [backup, www.appdynamics.com]` to the *storage* service. Next, add calls to `http://backup/item` and `http://www.appdynamics.com/item` to any of the endpoints.
+- Use [DemoMonkey](http://bit.ly/demomonkey) to change the type of the storage remote service to `fileserver`
+
+After restarting your environment, you should see an additional tier of type PHP and two more external services. Also your storage is now a fileserver!
+
+## Step 3 - Errors & Randomness
+
+Open `tutorial/step3.yml` and compare the content with `step2`. Again, there are a few differences:
+
+- The backend has an `error` call with a probability of 10%
+- There is a *new-backend* and the *new-frontend* randomly either calls this or the old *backend*.
+
+When you spin up the environment you should see those two changes on your flowmap and also in the snapshots.
+
+Now, you are able to create performance issues with **APM Game**. But, again, we can add a few more things:
+
+- Edit *storage* and add the following after the `sleep,500`:
+```YAML
+- call: sleep,8000
+  schedule: "* */2 * * * * *"
+```
+- Edit *backend* and replace `- http://storage/item` with:
+```YAML
+- call: http://storage/item
+  remoteTimeout: 2000
+```
+
+After an environment restart you should see error transactions for the communication between *backend* and *storage*. The error description should be a timeout on the *backend*
+
+
+## Step 4 - EUM
+
+Again, compare `step-3.yml` with `step-4.yml`. This time, there is only one difference: At the top is a section for EUM configuration. Add the missing EUM key and start the environment. After a few minutes you should see some data in EUM.
+
+Since all your issues are in the backend, the data in EUM is not very interesting, yet. To change this, add the following service to `step-4.yml`:
+
+```YAML
+cdn:
+  type: nodejs
+  agent: no  
+  endpoints:
+    http:
+      logo.png:
+        - sleep,1000      
+      script.js:
+        - sleep,2000
+```     
+
+Also, add `image,http://cdn/logo.png` to the `/list` of *frontend*. When you now restart your environment, EUM will report issues with the picture. In the same way you can use `script,http://cdn/script.js`. Finally you can use `ajax,http://backend/list/items` to add an ajax call to the backend.
+
+## Step 5 - Analytics
+
+Coming soon.
+
 # Usage
 
 1. Configure your game using YAML. You can look into the file `config.yml` to get started. Read the **Configuration** section below to learn how you can describe your application environment.
@@ -96,7 +198,7 @@ In the **apm** section you can provide all properties required to configure the 
 
 If you want to use analytics capabilities, set the following:
 
-- eventsService: The URL of your analytics endpoints, e.g. `http://analytics.example.com:9080
+- eventsService: The URL of your analytics endpoints, e.g. `http://analytics.example.com:9080`
 - globalAccountName: Your global/long account name, e.g. `customer1_ffffffff-ffff-ffff-ffff-ffffffffffff`
 
 Finally, you also can setup End User Monitoring in an `eum` sub-section:
@@ -133,7 +235,7 @@ A service can have the following properties:
 
 - **type** (required): Define the type of this service. You can currently use the following: `java`, `nodejs`, `php` and `mysql`. **Hint**: Prefer nodejs for agentless services and also if you want to build a big environment, since it comes with the lowest overhead.
 - **agent**: Set to `no` or `yes` to disable or enable the appdynamics agent.
-- **port**: Set a port which will be exposed to your docker host. So if you run locally, you can access this service via `http://localhost:<port>
+- **port**: Set a port which will be exposed to your docker host. So if you run locally, you can access this service via `http://localhost:<port>`
 - **endpoints** (java, nodejs, php only): Define multiple endpoints for this service. Read below to learn how to define endpoints.
 - **aliases**: Provide a list of network name aliases. This is useful for agentless services, that serve as multiple remote services, e.g. multiple payment providers. **Hint**: You can use any name for an alias, even some existing domain names (e.g. www.appdynamics.com)!
 - **labels**: You can provide a list of docker labels, that will be visible in the "container" view.
@@ -219,7 +321,7 @@ The example above first executes a call to another service, called backend, then
   - `cache,<timeout>`: Call a remote service of type cache. For Java this is ehcache2, for PHP and nodejs there is no real cache implementation, but they will tell you that a redis service was called.
   - `error,<code>,<message>`: Throw an error with HTTP code `<code>` and message `<message>`.  
   - `image,<URL>`: Put an `<img src=<URL>>` on the result page. This can be used to slow down end user responses.
-  - `script,<URL>`: Put an `<script src=<<URL>>` on the result page. This can be used to delay the document building time.
+  - `script,<URL>`: Put an `<script src=<URL>>` on the result page. This can be used to delay the document building time.
   - `ajax,<URL>`: Put an ajax call to <URL> in the result page.
   - `data` (only java): This is a special command to add data to a snapshot/transaction analytics. It is only available in object notation and has the following attributes:
     - `call`: Always set to `data`
