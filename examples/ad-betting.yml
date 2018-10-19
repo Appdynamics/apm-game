@@ -6,11 +6,11 @@ apm:
   eventsService: http://localhost:9080
   globalAccountName:
   eum:
-    appKey: ''
-    adrumExtUrlHttp: 'http://cdn.appdynamics.com'
-    adrumExtUrlHttps: 'https://cdn.appdynamics.com'
-    beaconUrlHttp: 'http://col.eum-appdynamics.com'
-    beaconUrlHttps: 'https://col.eum-appdynamics.com'
+    appKey:
+    adrumExtUrlHttp: http://cdn.appdynamics.com
+    adrumExtUrlHttps: https://cdn.appdynamics.com
+    beaconUrlHttp: http://col.eum-appdynamics.com
+    beaconUrlHttps: https://col.eum-appdynamics.com
 
 services:
   frontend:
