@@ -18,22 +18,20 @@ if(typeof config.wait !== 'number') {
 function run() {
 
 	(async() => {
-
-	    const browser = await puppeteer.launch({
-	        args: [
-	            '--no-sandbox',
-	            '--disable-setuid-sandbox'
-	        ]
-	    });
-
-	    const page = await browser.newPage();
-
-			page.on('requestfinished', function(request) {
-				console.log('  -- ' + request.url())
-			})
-
 			while(true) {
 				console.log("==========")
+				const browser = await puppeteer.launch({
+		        args: [
+		            '--no-sandbox',
+		            '--disable-setuid-sandbox'
+		        ]
+		    });
+
+		    const page = await browser.newPage();
+
+				page.on('requestfinished', function(request) {
+					console.log('  -- ' + request.url())
+				})
 				var uniqueId = uuidv4();
 				for(var i = 0; i < config.urls.length; i++) {
 					const myUrl = new url.URL(config.urls[i]);
@@ -48,6 +46,7 @@ function run() {
 						await new Promise(resolve => setTimeout(resolve, 1500));
 					}
 				}
+				await page._client.send('Network.clearBrowserCookies');
 			}
 
 			await browser.close();
