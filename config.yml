@@ -1,16 +1,16 @@
 apm:
-  controller: http://osxltsneum.fritz.box:8090
+  controller: http://localhost:8090
   accountName: customer1
-  accountAccessKey: 4b4c0344-64ba-4777-a3ac-10b143910367
+  accountAccessKey:
   applicationName: apm_game
-  eventsService: http://osxltsneum.fritz.box:9080
-  globalAccountName: customer1_1fbb87ca-d377-45a9-9643-9904bceee0f0
+  eventsService: http://localhost:9080
+  globalAccountName: 
   eum:
-    appKey: 'AD-AAB-AAK-RUM'
-    adrumExtUrlHttp: 'http://cdn.appdynamics.com'
-    adrumExtUrlHttps: 'https://cdn.appdynamics.com'
-    beaconUrlHttp: 'http://col.eum-appdynamics.com'
-    beaconUrlHttps: 'https://col.eum-appdynamics.com'
+    appKey:
+    adrumExtUrlHttp: http://cdn.appdynamics.com
+    adrumExtUrlHttps: https://cdn.appdynamics.com
+    beaconUrlHttp: http://col.eum-appdynamics.com
+    beaconUrlHttps: https://col.eum-appdynamics.com
 
 services:
   frontend:
