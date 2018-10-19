@@ -45,12 +45,9 @@ function run() {
 						console.log(e)
 						await new Promise(resolve => setTimeout(resolve, 1500));
 					}
-				}
-				await page._client.send('Network.clearBrowserCookies');
+				}				
+				await browser.close();
 			}
-
-			await browser.close();
-
 	})();
 
 }
