@@ -26,11 +26,17 @@ import com.appdynamics.apm.appagent.api.IMetricAndEventReporter;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class JavaNode {
 
     protected static Cache cache;
     private static ITransactionDemarcator delegate = AgentDelegate.getTransactionDemarcator();
     private static IMetricAndEventReporter metricAndEventReporter = AgentDelegate.getMetricAndEventPublisher();
+
+    private static final Logger logger = LoggerFactory.getLogger(JavaNode.class);
+
 
     private static HashSet<DataScope> allScopes;
 
@@ -139,7 +145,28 @@ public class JavaNode {
             }
         }
 
+        protected String logMessage(String level, String msg) {
+            switch(level) {
+                case "warn":
+                    logger.warn(msg);
+                    break;
+                case "error":
+                    logger.error(msg);
+                    break;
+                case "debug":
+                    logger.debug(msg);
+                    break;
+                case "trace":
+                    logger.trace(msg);
+                    break;
+                default:
+                    logger.info(msg);
+            }
+            return "Logged (" + level + "): " + msg;
+        }
+
         protected String processCall(String call, boolean catchExceptions, int remoteTimeout) throws IOException {
+            logger.info("Processing call: {}", call);
             if (call.startsWith("sleep")) {
                 int timeout = Integer.parseInt(call.split(",")[1]);
                 try {
@@ -148,6 +175,14 @@ public class JavaNode {
 
                 }
                 return "Slept for " + timeout;
+            }
+
+            if(call.startsWith("log")) {
+                String[] log = call.split(",");
+                if(log.length > 2) {
+                    return this.logMessage(log[1], log[2]);
+                }
+                return this.logMessage("info", log[1]);
             }
 
             if (call.startsWith("slow")) {
@@ -278,6 +313,7 @@ public class JavaNode {
                              HttpServletResponse response) throws ServletException,
                 IOException {
             String endpoint = request.getRequestURI();
+            logger.info("Endpoint: {}", endpoint);
 
             boolean withEum = NodeServlet.apmConfig.containsKey("eum");
 

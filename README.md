@@ -23,6 +23,7 @@ APM Game implements and uses the following features of AppDynamics:
   - mySQL
 - Analytics
   - Transaction
+  - Log
   - Browser Records
   - Browser Sessions
 - Infrastructure
@@ -320,6 +321,7 @@ The example above first executes a call to another service, called backend, then
   - `slow,<timeout>`: Slow down processing by around `<timeout>` milliseconds. The timeout is not accurate, so it will most of the time longer than the value given in `<timeout>`.
   - `cache,<timeout>`: Call a remote service of type cache. For Java this is ehcache2, for PHP and nodejs there is no real cache implementation, but they will tell you that a redis service was called.
   - `error,<code>,<message>`: Throw an error with HTTP code `<code>` and message `<message>`.  
+  - `log,<level>,<message>` (java only): Write a log message. 
   - `image,<URL>`: Put an `<img src=<URL>>` on the result page. This can be used to slow down end user responses.
   - `script,<URL>`: Put an `<script src=<URL>>` on the result page. This can be used to delay the document building time.
   - `ajax,<URL>`: Put an ajax call to <URL> in the result page.

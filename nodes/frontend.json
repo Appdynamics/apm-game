@@ -21,7 +21,7 @@
         "catchExceptions": false,
         "remoteTimeout": 2000
       }],
-      "/data": ["sleep,50", {
+      "/data": ["sleep,50", "log,warn,do some logging", "log,more logging", {
         "call": "data",
         "id": "price",
         "type": "double",

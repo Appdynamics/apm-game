@@ -16,6 +16,7 @@ fi
 
 IMAGE_PREFIX="apm-game"
 DOCKER_NETWORK="${CONTAINER_PREFIX}/network"
+DOCKER_LOGS_VOLUME="${CONTAINER_PREFIX}-logs"
 
 IS_RUNNING=`docker ps -f name=${CONTAINER_PREFIX} -q`
 
@@ -50,7 +51,9 @@ docker build -t "${IMAGE_PREFIX}/machine" infrastructure/machine;
 docker build -t "${IMAGE_PREFIX}/netviz" infrastructure/netviz;
 
 docker network create ${DOCKER_NETWORK}
+docker volume create ${DOCKER_LOGS_VOLUME}
 
-node master/index.js ${CONFIG} ${IMAGE_PREFIX} ${DOCKER_NETWORK} ${CONTAINER_PREFIX}
+node master/index.js ${CONFIG} ${IMAGE_PREFIX} ${DOCKER_NETWORK} ${DOCKER_LOGS_VOLUME} ${CONTAINER_PREFIX}
 
 docker network rm ${DOCKER_NETWORK}
+docker volume rm ${DOCKER_LOGS_VOLUME}

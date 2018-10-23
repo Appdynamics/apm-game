@@ -7,7 +7,8 @@ const shellescape = require('shell-escape')
 
 const imagePrefix = process.argv[3]
 const dockerNetwork = process.argv[4]
-const containerPrefix = process.argv[5]
+const dockerLogsVolume = process.argv[5]
+const containerPrefix = process.argv[6]
 
 var containers = []
 
@@ -54,6 +55,7 @@ try {
                                   '--label', 'container-type=service',
                                   '--label', `service-name=${name}`,
                                   '--label', `service-type=${service.type}`,
+                                  '-v', `${dockerLogsVolume}:/logs`,
                                   '--label', `with-agent=${service.agent === 'yes'?'yes':'no'}`,
                                   '--rm'
                 ]
@@ -80,6 +82,7 @@ try {
           cmd.push('-e', `APPDYNAMICS_NETVIZ_AGENT_PORT=3892`)
           cmd.push('-e', `APPDYNAMICS_AGENT_TIER_NAME=${name}`)
           cmd.push('-e', `APPDYNAMICS_AGENT_NODE_NAME=${name}`)
+          cmd.push('-e', `LOG_DIRECTORY=/logs/java/${name}/`)
       }
 
       if(service.type === 'mysql') {
@@ -138,6 +141,7 @@ try {
                                   '--log-opt', 'labels=apm-game-type,loader-type',
                                   '--label', 'container-type=loader',
                                   '--label', `loader-type=${loader.type}`,
+                                  '-v', `${dockerLogsVolume}:/logs`,
                                   '--rm'
                 ]
 
@@ -169,6 +173,7 @@ try {
                                           '-v', '/:/hostroot:ro',
                                           '-v', '/var/run/docker.sock:/var/run/docker.sock',
                                           '-v', '/var/lib/docker/containers/:/var/lib/docker/containers/',
+                                          '-v', `${dockerLogsVolume}:/logs`,
                                           '--log-opt', 'labels=container-type',
                                           '--label', 'container-type=machine-agent',
                                           '--rm',
@@ -199,6 +204,7 @@ try {
                                          '--cap-add=NET_ADMIN',
                                          '--cap-add=NET_RAW',
                                          '--name', netvizAgentName,
+                                         '-v', `${dockerLogsVolume}:/logs`,
                                          imagePrefix + '/netviz']
 
   spawn(shellescape(netvizAgentCmd), {
