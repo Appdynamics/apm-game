@@ -233,10 +233,9 @@ function processRequest(req, res, params) {
   var signularityHeader = appdynamics.parseCorrelationInfo(req).headers.singularityheader
 
   if(typeof signularityHeader !== 'undefined') {
-    const newSearchParams = new url.URLSearchParams(signularityHeader.replace(/\*/g, '&'));
-    console.log(newSearchParams.get('guid'))
-    logger.addContext('AD.requestGUID', "AD_REQUEST_GUID[" + newSearchParams.get('guid') + "]");
-
+    const sh = new url.URLSearchParams(signularityHeader.replace(/\*/g, '&'));
+    console.log(sh.get('guid'))
+    logger.addContext('AD.requestGUID', "AD_REQUEST_GUID[" + sh.get('guid') + "]");
   }
 
   if(txn) {
