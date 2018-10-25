@@ -56,6 +56,7 @@ try {
                                   '--label', `service-name=${name}`,
                                   '--label', `service-type=${service.type}`,
                                   '-v', `${dockerLogsVolume}:/logs`,
+                                  '-e', `LOG_DIRECTORY=/logs/${service.type}/${name}/`,
                                   '--label', `with-agent=${service.agent === 'yes'?'yes':'no'}`,
                                   '--rm'
                 ]
@@ -82,7 +83,6 @@ try {
           cmd.push('-e', `APPDYNAMICS_NETVIZ_AGENT_PORT=3892`)
           cmd.push('-e', `APPDYNAMICS_AGENT_TIER_NAME=${name}`)
           cmd.push('-e', `APPDYNAMICS_AGENT_NODE_NAME=${name}`)
-          cmd.push('-e', `LOG_DIRECTORY=/logs/java/${name}/`)
       }
 
       if(service.type === 'mysql') {

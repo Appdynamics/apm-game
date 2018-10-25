@@ -1,3 +1,4 @@
 configs/*.yml
 node_modules/
 package-lock.json
+nodes/*/node.log

@@ -1,9 +1,10 @@
 {
   "dependencies": {
-    "appdynamics": "4.5.1",
+    "appdynamics": "^4.5.1",
     "cronmatch": "^0.1.1",
-    "express": "^4.16.3",
-    "morgan": "^1.9.0",
+    "express": "^4.16.4",
+    "log4js": "^3.0.6",
+    "morgan": "^1.9.1",
     "sleep": "^5.2.3"
   }
 }

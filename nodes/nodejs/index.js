@@ -5,6 +5,8 @@ const url = require('url')
 const config = JSON.parse(process.env.APP_CONFIG)
 const apm = JSON.parse(process.env.APM_CONFIG)
 
+const logDir = process.env.LOG_DIRECTORY ? process.env.LOG_DIRECTORY : '.'
+
 const controller = url.parse(apm.controller)
 
 var appdynamics = {
@@ -52,16 +54,47 @@ if (config.agent === 'yes') {
 
 const express = require('express')
 const morgan = require('morgan')
+const log4js = require("log4js");
 const http = require('http')
 const cronmatch = require('cronmatch')
 var bodyParser = require('body-parser');
 const sleep = require('sleep');
 
+log4js.configure({
+  appenders: {
+    'CONSOLE': {
+      type: 'file',
+      filename: `${logDir}/node.log`,
+      layout: {
+        type: 'pattern',
+        pattern: '%d{yyyy-MM-dd hh:mm:ss,SSS} [%z] [%X{AD.requestGUID}] %p %c - %m'
+      }
+    },
+    'FILE': {
+      type: 'stdout',
+      layout: {
+        type: 'pattern',
+        pattern: '%d{yyyy-MM-dd hh:mm:ss,SSS} [%z] [%X{AD.requestGUID}] %p %c - %m'
+      }
+    }
+  },
+  categories: { default: { appenders: ['CONSOLE', 'FILE'], level: 'info' } }
+});
+
+var logger = log4js.getLogger();
+logger.level = 'debug';
+
 const app = express()
 
 app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
-app.use(morgan('combined'))
+app.use(morgan(':remote-addr - ":method :url HTTP/:http-version" :status :res[content-length]  ":user-agent" - :response-time ms', {
+  "stream": {
+    write: function(str) {
+      logger.debug(str.trim('\n'));
+    }
+  }
+}))
 
 var port = parseInt(process.argv[2])
 
@@ -196,6 +229,15 @@ function processRequest(req, res, params) {
   const path = url.parse(req.url).pathname
 
   var txn = appdynamics.getTransaction(req);
+
+  var signularityHeader = appdynamics.parseCorrelationInfo(req).headers.singularityheader
+
+  if(typeof signularityHeader !== 'undefined') {
+    const newSearchParams = new url.URLSearchParams(signularityHeader.replace(/\*/g, '&'));
+    console.log(newSearchParams.get('guid'))
+    logger.addContext('AD.requestGUID', "AD_REQUEST_GUID[" + newSearchParams.get('guid') + "]");
+
+  }
 
   if(txn) {
 
