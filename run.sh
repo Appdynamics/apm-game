@@ -14,6 +14,7 @@ then
 	CONTAINER_PREFIX=`basename ${CONFIG%.yml}`
 fi
 
+CUSTOM_CODE_DIR="$(pwd)/scripts"
 IMAGE_PREFIX="apm-game"
 DOCKER_NETWORK="${CONTAINER_PREFIX}/network"
 DOCKER_LOGS_VOLUME="${CONTAINER_PREFIX}-logs"
@@ -53,7 +54,7 @@ docker build -t "${IMAGE_PREFIX}/netviz" infrastructure/netviz;
 docker network create ${DOCKER_NETWORK}
 docker volume create ${DOCKER_LOGS_VOLUME}
 
-node master/index.js ${CONFIG} ${IMAGE_PREFIX} ${DOCKER_NETWORK} ${DOCKER_LOGS_VOLUME} ${CONTAINER_PREFIX}
+node master/index.js "${CONFIG}" "${IMAGE_PREFIX}" "${DOCKER_NETWORK}" "${DOCKER_LOGS_VOLUME}" "${CONTAINER_PREFIX}" "${CUSTOM_CODE_DIR}"
 
 docker network rm ${DOCKER_NETWORK}
 docker volume rm ${DOCKER_LOGS_VOLUME}

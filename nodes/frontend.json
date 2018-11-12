@@ -26,7 +26,16 @@
         "id": "price",
         "type": "double",
         "value": [1,2,3]
-      }]
+      }, {
+        "call": "data",
+        "id": "randomThingy",
+        "chance": "integer,min:5,max:13"
+      }, {
+        "call": "data",
+        "id": "stuff",
+        "chance": "letter,casing:upper"
+      }],
+      "/script": ["code,sample.js"]
     }
   },
   "name": "frontend"

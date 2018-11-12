@@ -10,6 +10,8 @@ const dockerNetwork = process.argv[4]
 const dockerLogsVolume = process.argv[5]
 const containerPrefix = process.argv[6]
 
+var localCustomCodeDir = process.argv[7]
+
 var containers = []
 
 process.on('SIGINT', function () {
@@ -56,6 +58,8 @@ try {
                                   '--label', `service-name=${name}`,
                                   '--label', `service-type=${service.type}`,
                                   '-v', `${dockerLogsVolume}:/logs`,
+                                  '-v', `${localCustomCodeDir}:/scripts`,
+                                  '-e', 'CUSTOM_CODE_DIR=/scripts',
                                   '-e', `LOG_DIRECTORY=/logs/${service.type}/${name}/`,
                                   '--label', `with-agent=${service.agent === 'yes'?'yes':'no'}`,
                                   '--rm'

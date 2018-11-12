@@ -1,0 +1,94 @@
+apm:
+  applicationName: apm-game-tutorial-ecommerce
+  controller:
+  accountName:
+  accountAccessKey:
+  eventsService:
+  globalAccountName:
+  eum:
+    appKey:
+    adrumExtUrlHttp: 'http://cdn.appdynamics.com'
+    adrumExtUrlHttps: 'https://cdn.appdynamics.com'
+    beaconUrlHttp: 'http://col.eum-appdynamics.com'
+    beaconUrlHttps: 'https://col.eum-appdynamics.com'
+
+services:
+  mobile-frontend:
+    type: nodejs
+    agent: yes
+    endpoints:
+      http:
+        /product:
+          - http://backend/item
+          - call: data
+            id: product
+            value: APM Game - Limited Edition
+        /add-to-cart:
+          - http://backend/cart/add
+          - call: data
+            id: price
+            value: 35
+        /checkout:
+          - http://backend/cart/checkout
+          - call: data
+            id: name
+            chance: name
+          - call: data
+            id: ccNumber
+            chance: cc,type:Mastercard
+  www-frontend:
+    type: java
+    agent: yes
+    endpoints:
+      http:
+        /product:
+          - http://backend/item
+          - call: data
+            id: product
+            type: string
+            value: APM Game - Limited Edition
+        /add-to-cart:
+          - http://backend/cart/add
+          - call: data
+            id: price
+            type: double
+            value: 35
+        /checkout:
+          - http://backend/cart/checkout
+          - call: data
+            id: name
+            type: string
+            value: [Dafi Vatemi, Nelgatwu Powuku Heup, Patrick Copeland]
+  backend:
+    type: nodejs
+    agent: no
+    endpoints:
+      http:
+        /item:
+          - log,info,Item available
+          - sleep,50
+        /cart/add:
+          - log,warn,Cart is full
+          - sleep,150
+        /cart/checkout:
+          - log,debug,Checkout
+          - sleep,500
+
+
+loaders:
+  mobile:
+    type: puppeteer
+    wait: 15
+    count: 1
+    urls:
+      - http://mobile-frontend/product
+      - http://mobile-frontend/add-to-cart
+      - http://mobile-frontend/checkout
+  browser:
+    type: puppeteer
+    wait: 15
+    count: 1
+    urls:
+      - http://www-frontend/product
+      - http://www-frontend/add-to-cart
+      - http://www-frontend/checkout

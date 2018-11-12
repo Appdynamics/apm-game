@@ -1,18 +1,25 @@
 const process = require('process')
 const url = require('url')
+const path = require('path')
+const chance = require('chance').Chance();
 
 
 const config = JSON.parse(process.env.APP_CONFIG)
 const apm = JSON.parse(process.env.APM_CONFIG)
+
+const customCodeDir = process.env.CUSTOM_CODE_DIR
 
 const logDir = process.env.LOG_DIRECTORY ? process.env.LOG_DIRECTORY : '.'
 
 const controller = url.parse(apm.controller)
 
 var appdynamics = {
+  parseCorrelationInfo: function() {
+    return { headers: {} }
+  },
   getTransaction: function() { return {
     startExitCall: function() {},
-    endExitCall: function() {}
+    endExitCall: function() {},
   }; }
 }
 
@@ -144,6 +151,74 @@ function loadFromCache(timeout, txn) {
   return response.length+" send data to cache"
 }
 
+function processData(resolve, reject, req, data) {
+
+  if(!data.id) {
+      reject("Data not processed: No id provided")
+  }
+
+  if(data.chance) {
+    var fna = data.chance.split(",")
+    var fn = fna.shift()
+    var attributes = fna.reduce((c,a) => { var [k,v] = a.split(":"); c[k] = isNaN(parseInt(v)) ? v : parseInt(v); return c }, {});
+    data.value = chance[fn](attributes);
+  }
+
+  if(!data.value) {
+      reject("Data not processed: No value provided")
+  }
+
+  var value = data.value
+  var id = data.id
+
+  if (Array.isArray(value)) {
+    value = value[Math.floor(Math.random() * value.length)]
+  }
+
+  var txn = appdynamics.getTransaction(req);
+  if(txn) {
+    txn.addSnapshotData(id, value)
+    txn.addAnalyticsData(id, value)
+    resolve(`${id} data added: ${value}`)
+  }
+
+  reject("No data added: Transaction not found.")
+}
+
+function logMessage(level, message) {
+  if(['trace', 'debug', 'info', 'warn', 'error', 'fatal'].includes(level)) {
+    logger[level](message)
+  } else {
+    logger.info(message)
+  }
+  return "Logged (" + level + "): " + message;
+}
+
+function executeCustomScript(script, req, resolve, reject) {
+  var txn = appdynamics.getTransaction(req)
+  var r = require(path.join(customCodeDir, script))({
+    logger: logger,
+    req: req,
+    cronmatch: cronmatch,
+    txn: txn,
+    sleep: sleep.msleep,
+    add: (id, value) => {
+      txn.addAnalyticsData(id, value)
+      txn.addSnapshotData(id, value)
+    },
+    chance: chance
+  })
+  if(r === false) {
+    reject(`Script ${script} was not executed successfully`)
+  } else if(typeof r === "object" && r.hasOwnProperty('code') && r.hasOwnProperty('code')) {
+    reject({code: r.code, message: r.message})
+  } else if(typeof r === 'string') {
+    resolve(r)
+  } else {
+    resolve(`Script ${script} was executed successfully`)
+  }
+}
+
 function processCall(call, req) {
   return new Promise(function(resolve, reject) {
 
@@ -171,9 +246,11 @@ function processCall(call, req) {
         if(call.hasOwnProperty('catchExceptions')) {
           catchExceptions = call.catchExceptions
         }
+        if(call.hasOwnProperty('call') && call.call === 'data') {
+          return processData(resolve, reject, req, call)
+        }
         call = call.call
     }
-
     if (call.startsWith('error')) {
       var [_,code,message] = call.split(',')
       reject({ code, message })
@@ -186,7 +263,6 @@ function processCall(call, req) {
       var [_,timeout] = call.split(',')
       resolve(buildResponse(timeout))
     } else if (call.startsWith('http://')) {
-      console.log()
 
       var opts = Object.assign(url.parse(call), {'headers': {'Content-Type': 'application/json'}})
 
@@ -217,6 +293,16 @@ function processCall(call, req) {
       var [_,timeout] = call.split(',')
       var txn = appdynamics.getTransaction(req);
       resolve(loadFromCache(timeout, txn))
+    } else if (call.startsWith('log')) {
+      var logging = call.split(',')
+      if(logging.length > 2) {
+        resolve(logMessage(logging[1], logging[2]))
+      } else {
+        resolve(logMessage("info", logging[1]))
+      }
+    } else if(call.startsWith('code')) {
+        var [_,script] = call.split(',');
+        executeCustomScript(script, req, resolve, reject)        
     } else {
       // No other methods are currently implemented
       resolve(`${call} is not supported`)
@@ -234,7 +320,6 @@ function processRequest(req, res, params) {
 
   if(typeof signularityHeader !== 'undefined') {
     const sh = new url.URLSearchParams(signularityHeader.replace(/\*/g, '&'));
-    console.log(sh.get('guid'))
     logger.addContext('AD.requestGUID', "AD_REQUEST_GUID[" + sh.get('guid') + "]");
   }
 
@@ -248,7 +333,7 @@ function processRequest(req, res, params) {
 
     if(params.hasOwnProperty('analytics') && typeof params.analytics === 'object') {
       Object.keys(params.analytics).forEach(function(key) {
-        console.log('Adding analytics data: ', key, params.analytics[key])
+        logger.debug('Adding analytics data: ', key, params.analytics[key])
         txn.addAnalyticsData(key, params.analytics[key])
         txn.addSnapshotData(key, params.analytics[key])
       })
@@ -274,6 +359,7 @@ function processRequest(req, res, params) {
 
 
     }).catch(function(reason) {
+      logger.error(reason.message)
       res.status(typeof reason.code === 'number'?reason.code:500).send(reason.message)
     })
   } else {

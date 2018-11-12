@@ -159,7 +159,41 @@ Also, add `image,http://cdn/logo.png` to the `/list` of *frontend*. When you now
 
 ## Step 5 - Analytics
 
-Coming soon.
+This time we start with a completely new environment. Have a look into `step-5.yml`. As you can see, it is rather simple, but there are a few new things:
+
+- Custom data is added to snapshots & analytics using the `data`. This command comes with a lot of flexibility, so see how the different examples behave. Note, that `chance` can only be used with nodejs!
+- Besides `data` there are some `log` statements, that write some entries into a application log file. You can configure Log Analytics to pick up those log files from `/logs/<nodeType>/<nodeName>/node.log`.
+- The loaders section has multiple steps, that look like a journey. After running the environment for a view minutes, check the EUM sessions screen, you will see that every loop is recorded as a separate session, following those steps!
+
+Play around with the data collectors. Here are a few things you can try it:
+
+- Go to the [chance.js homepage](https://chancejs.com/) and try out a few of the possibilities using the nodejs frontend.
+- Add some additional `log` statements using different severity levels (info, debug, error, warn, trace)
+- Add an additional http endpoint to the frontend (e.g. /orderConfirmation) and add it to the loaders' loop
+
+With those capabilities you are already able to build some good environments with business data. Of course, you might want to have some relationship in your data, for example certain products have a certain price or a certain credit card type is processed very slow. To anticipate all this possibilities, you can load a custom script from `scripts/` using the `script` command. Review the `sample.js` and try to come up with your own example.
+
+## Step 6 - Extend & Contribute
+
+After you finished step 5, you should be able to leverage all the capabilities provided by APM Game. At same point, you will find some bugs or miss some features. In this case, open an issue at https://github.com/Appdynamics/apm-game/issues. If you are able to fix the bug yourself or implement the feature, please do so and provide a pull request. To get you started, follow these instructions to add some simple `hello world` features:
+
+- Open the file `nodes/nodejs/index.js`: this is the implementation of the nodejs agent.
+- Look for a line, that says ```resolve(`${call} is not supported`)```: above you see all the commands, that are available for nodejs.
+- Add the following `else if` block above the last `else`:
+
+```javascript
+...
+else if(call.startsWith('hello')) {
+    resolve('hello world')
+}
+...
+```
+
+- Add a `- hello` command to one of your endpoints. Use a node that has a published port
+- Run your environment
+- Call the endpoint using your browser on the configured port. The output should contain a `hello world`
+
+Since you don't want to spin up all the containers to test a feature, there is a `run.sh` for every node type. Review them to learn how you can setup your development environment.
 
 # Usage
 
@@ -316,20 +350,21 @@ The example above first executes a call to another service, called backend, then
 
 - **Commands** are like lines of code, that are executed by a service. You can call as many of them as you like to define an endpoint.
   - `http://<service>/<endpoint>`: Call another service via http.
-  - `sql://<service>/<database>?query=<query>` (only php): Call a database service via SQL.
+  - `sql://<service>/<database>?query=<query>` (php only): Call a database service via SQL.
   - `sleep,<timeout>`: Stop processing for `<timeout>` milliseconds. Note, that the call graph will contain a language-specific `sleep` method, so use it especially with agent-less services and prefer `slow` for those having an agent.
   - `slow,<timeout>`: Slow down processing by around `<timeout>` milliseconds. The timeout is not accurate, so it will most of the time longer than the value given in `<timeout>`.
   - `cache,<timeout>`: Call a remote service of type cache. For Java this is ehcache2, for PHP and nodejs there is no real cache implementation, but they will tell you that a redis service was called.
   - `error,<code>,<message>`: Throw an error with HTTP code `<code>` and message `<message>`.  
-  - `log,<level>,<message>` (java only): Write a log message. 
+  - `log,<level>,<message>` (java & nodejs): Write a log message. The messages are stored on a shared volume, accessible at `/logs/<nodeType>/<nodeName>/node.log`
   - `image,<URL>`: Put an `<img src=<URL>>` on the result page. This can be used to slow down end user responses.
   - `script,<URL>`: Put an `<script src=<URL>>` on the result page. This can be used to delay the document building time.
   - `ajax,<URL>`: Put an ajax call to <URL> in the result page.
-  - `data` (only java): This is a special command to add data to a snapshot/transaction analytics. It is only available in object notation and has the following attributes:
+  - `data` (java & nodejs): This is a special command to add data to a snapshot/transaction analytics. It is only available in object notation and has the following attributes:
     - `call`: Always set to `data`
     - `id`: A unique identifier for this data point. This will be used by AppDynamics in the snapshot/analytics view.
-    - `type`: The type of this data point. Possible values are `string`, `int` and `double`
+    - `type` (java only): The type of this data point. Possible values are `string`, `int` and `double`
     - `value`: The value of the data point. Use a single value or an array to add some randomness.
+    - `chance` (nodejs only): Random fake data using [chance.js](https://chancejs.com/)
 
 - **Modifiers** change the behaviour of a call. To use them provide an object notation for your call. As you can see in the example above, you can combine modifiers as you like:
   - `probability: <value>`: Execute this line of code with the probability of `<value>`. Provide a float for `<value>` between 0 and 1, where 0 means 0% and 1 means 100%.  
