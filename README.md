@@ -59,6 +59,14 @@ docker login
 
 Setup an [AppDynamics Platform](https://docs.appdynamics.com/display/latest/AppDynamics+Platform) or use your AppDynamics SaaS controller.
 
+# Usage
+
+1. Configure your game using YAML. You can look into the file `config.yml` to get started. Read the **Configuration** section below to learn how you can describe your application environment.
+
+2. Execute the `run.sh`
+
+3. Wait for data in AppDynamics
+
 # Tutorial
 
 Before you go into the details of configuring your own environment, you can walk through this tutorial to get a quick understanding. Before you continue, follow the steps above to setup **APM Game** and your **AppDynamics Platform**.
@@ -195,13 +203,6 @@ else if(call.startsWith('hello')) {
 
 Since you don't want to spin up all the containers to test a feature, there is a `run.sh` for every node type. Review them to learn how you can setup your development environment.
 
-# Usage
-
-1. Configure your game using YAML. You can look into the file `config.yml` to get started. Read the **Configuration** section below to learn how you can describe your application environment.
-
-2. Execute the `run.sh`
-
-3. Wait for data in AppDynamics
 
 # Configuration
 
