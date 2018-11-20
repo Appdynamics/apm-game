@@ -183,7 +183,8 @@ try {
                                           '--rm',
                                           '--network', dockerNetwork,
                                           '--name', machineAgentName,
-                                          '--network-alias=machine-agent'
+                                          '--network-alias=machine-agent',
+                                          '--network-alias=analytics'
                                           ]
   if(apm.eventsService && apm.globalAccountName) {
     machineAgentCmd.push('-e', `WITH_ANALYTICS=1`)
