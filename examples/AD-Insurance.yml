@@ -1,0 +1,150 @@
+#Simulated insurance application, will register the BTs listed under the Web-frontend tier. 
+#Note - some additional BTs will register during the first few runs, you should view # of calls and exclude accordingly.
+#Performance Issue 1 - 500 Error on /homepage BT will happen 10% of the time
+#Performance Issue 2 - Bad SQL Call & Slow execution on /processpolicy and /history BTs on 13% of calls
+#Performance Issue 3 - Slow web service call for selectquote on 37% of calls
+#TIP - You can run two versions of the script, upping the load and issues for one
+apm:
+  applicationName: AD-Insurance
+  controller: 
+  accountName: 
+  accountAccessKey: 
+  eventsService: 
+  globalAccountName: 
+
+services:
+  web-frontend:
+    type: java
+    agent: yes
+    endpoints:
+      http:
+        /login:
+          - http://accountservices/account/login
+        /homepage:
+          - http://accountservices/account/home
+          - cache,128
+        /getquote:
+          - http://accountservices/quote
+        /submitquote:
+          - http://accountservices/submitquote
+        /history:
+          - http://accountservices/policies
+        /startclaim:
+          - http://accountservices/startclaim
+        /submitclaim:
+          - http://accountservices/submitclaim
+        /processpolicy:
+          - http://accountservices/policies/process
+  accountservices:
+    type: java
+    agent: yes
+    endpoints:
+      http:
+        /account/login:
+          - slow,323
+        /account/home:
+          - slow,524
+          - call: error,500,Oops
+            probability: 0.1
+        /quote:
+          - http://quotesengine/quote
+          - http://quotesengine/query/quote
+        /policies:
+          - http://policymgt/query/policy
+        /submitquote:
+          - http://quotesengine/query/quote
+        /startclaim:
+          - http://claimservices/startclaim
+        /submitclaim:
+          - http://claimservices/submitclaim
+        /policies/process:
+          - http://policymgt/query/policy
+          - http://policymgt/processpolicy
+  claimservices:
+    type: java
+    agent: yes
+    endpoints:
+      http:
+        /startclaim:
+         - slow,725
+        /submitclaim:
+         - slow,623
+  policymgt:
+    type: php
+    agent: yes
+    port: 3007
+    endpoints:
+      http:
+        /query/policy:
+          - sql://policiesdb/policy?query=INSERT INTO policies(customer,coverage) VALUES(test,123)
+          - call: slow,9435
+            probability: 0.13
+        /processpolicy:
+          -call: slow,926
+  policiesdb:
+    type: mysql
+    databases:
+      policy:
+        policies: [id, customer, coverage]
+  quotesdb:
+    type: mysql
+    databases:
+      quote:
+        quotes: [id, customer, premium]
+  quotesengine:
+    type: php
+    agent: yes
+    port: 3008
+    endpoints:
+      http:
+        /query/quote:
+          - sql://quotesdb/quote?query=SELECT * FROM quotes
+        /quote:
+          - http://aggregator/aggregate
+  aggregator:
+    type: java
+    agent: yes
+    endpoints:
+      http:
+        /aggregate:
+          - http://carinsurance/quote
+          - http://policygenius/quote
+          - http://selectquote/quote
+  selectquote:
+    type: nodejs
+    agent: no
+    endpoints:
+      http:
+        quote:
+          - call: sleep, 4253
+            schedule: "*/5 * * * *"
+            probability: 0.37
+  policygenius:
+    type: nodejs
+    agent: no
+    endpoints:
+      http:
+        quote:
+          - call: sleep, 75
+  carinsurance:
+    type: nodejs
+    agent: no
+    endpoints:
+      http:
+        quote:
+          - call: sleep, 53
+     
+loaders:
+  browser:
+    type: puppeteer
+    wait: 15
+    count: 5
+    urls:
+      - http://web-frontend/login
+      - http://web-frontend/homepage
+      - http://web-frontend/getquote
+      - http://web-frontend/homepage
+      - http://web-frontend/history
+      - http://web-frontend/startclaim
+      - http://web-frontend/submitclaim
+      - http://web-frontend/processpolicy
