@@ -69,7 +69,7 @@ const sleep = require('sleep');
 
 log4js.configure({
   appenders: {
-    'CONSOLE': {
+    'FILE': {
       type: 'file',
       filename: `${logDir}/node.log`,
       layout: {
@@ -77,7 +77,7 @@ log4js.configure({
         pattern: '%d{yyyy-MM-dd hh:mm:ss,SSS} [%z] [%X{AD.requestGUID}] %p %c - %m'
       }
     },
-    'FILE': {
+    'CONSOLE': {
       type: 'stdout',
       layout: {
         type: 'pattern',
@@ -302,7 +302,7 @@ function processCall(call, req) {
       }
     } else if(call.startsWith('code')) {
         var [_,script] = call.split(',');
-        executeCustomScript(script, req, resolve, reject)        
+        executeCustomScript(script, req, resolve, reject)
     } else {
       // No other methods are currently implemented
       resolve(`${call} is not supported`)
