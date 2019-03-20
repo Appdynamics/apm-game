@@ -1,6 +1,6 @@
 {
   "type": "nodejs",
-  "agent": "yes",
+  "agent": "no",
   "options": {
     "connectionDelay": 500
   },

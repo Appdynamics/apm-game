@@ -53,8 +53,6 @@ function buildResponse($timeout) {
 
 function queryDatabase($url) {
 
-  var_dump($url);
-
   $hostName = $url['host'];
   $database = substr($url['path'], 1);
 

@@ -2,7 +2,7 @@ global:
   machine: true
   netviz: true
   loaders: true
-  services: true
+  services: trueja
 
 apm:
   controller: http://localhost:8090
@@ -38,7 +38,7 @@ services:
           - image,http://cdn/logo.png
   backend:
     type: java
-    agent: yes
+    agent: no
     port: 3009
     endpoints:
       http:
@@ -67,7 +67,7 @@ services:
             value: [1,2,3]
   backend-v2:
     type: java
-    agent: yes
+    agent: no
     endpoints:
       http:
         /cart/add:

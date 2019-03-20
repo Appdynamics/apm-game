@@ -15,6 +15,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.HttpURLConnection;
+import java.sql.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.HashSet;
 
@@ -32,8 +33,8 @@ import org.slf4j.LoggerFactory;
 public class JavaNode {
 
     protected static Cache cache;
-    private static ITransactionDemarcator delegate = AgentDelegate.getTransactionDemarcator();
-    private static IMetricAndEventReporter metricAndEventReporter = AgentDelegate.getMetricAndEventPublisher();
+    private static ITransactionDemarcator delegate;
+    private static IMetricAndEventReporter metricAndEventReporter;
 
     private static final Logger logger = LoggerFactory.getLogger(JavaNode.class);
 
@@ -42,12 +43,12 @@ public class JavaNode {
 
     public static void main(String[] args) throws Exception {
 
+
+
         int port = 8080;
         CacheManager cacheManager;
 
-        allScopes = new HashSet<DataScope>();
-        allScopes.add(DataScope.SNAPSHOTS);
-        allScopes.add(DataScope.ANALYTICS);
+
 
         if (args.length > 0) {
             port = Integer.parseInt(args[0]);
@@ -70,6 +71,15 @@ public class JavaNode {
         server.setHandler(handler);
 
         NodeServlet.setConfig(config, apmConfig);
+
+
+        if(config.getString("agent").toString().equals("yes")) {
+            delegate = AgentDelegate.getTransactionDemarcator();
+            metricAndEventReporter = AgentDelegate.getMetricAndEventPublisher();
+            allScopes = new HashSet<DataScope>();
+            allScopes.add(DataScope.SNAPSHOTS);
+            allScopes.add(DataScope.ANALYTICS);
+        }
 
         handler.addServletWithMapping(NodeServlet.class, "/*");
 
@@ -113,6 +123,25 @@ public class JavaNode {
                 finish = System.currentTimeMillis();
             }
             return "Cache result: " + cache.get(element).toString();
+        }
+
+        protected String queryDatabase(String call, boolean catchExceptions, int remoteTimeout) throws IOException {
+            try {
+                String url = "jdbc:my" + call.split("\\?")[0];
+                Connection connection = DriverManager.getConnection(url, "root", "root");
+
+                Statement stmt = connection.createStatement();
+
+                stmt.executeQuery(call.split("\\?")[1]);
+
+                connection.close();
+            } catch (SQLException e) {
+                if(catchExceptions) {
+                    return e.getMessage();
+                }
+                throw new IOException(e.getMessage());
+            }
+            return "Database query executed: " + call;
         }
 
         protected String callRemote(String call, boolean catchExceptions, int remoteTimeout) throws IOException {
@@ -198,6 +227,9 @@ public class JavaNode {
             if (call.startsWith("http://")) {
                 return this.callRemote(call, catchExceptions, remoteTimeout);
             }
+            if (call.startsWith("sql://")) {
+                return this.queryDatabase(call, catchExceptions, remoteTimeout);
+            }
             if (call.startsWith("error")) {
                 throw new HttpException(500, "error");
             }
@@ -229,6 +261,10 @@ public class JavaNode {
         }
 
         protected String processData(JsonObject data) {
+            if(metricAndEventReporter == null) {
+                return "Data not processed: no agent installed.";
+            }
+
             if(!data.containsKey("id")) {
                 return "Data not processed: No id provided";
             }
