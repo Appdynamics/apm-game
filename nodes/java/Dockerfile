@@ -7,7 +7,7 @@ RUN chmod +x /app/java.sh
 COPY target/javanode-1.0-SNAPSHOT.jar /app
 COPY target/dependency-jars /app/dependency-jars
 RUN cp /opt/appdynamics/javaagent.jar /app/dependency-jars
-RUN cd /opt/appdynamics/ver*/external-services/ ; unzip netviz.zip 
+RUN cd /opt/appdynamics/ver*/external-services/ ; [ -f netviz.zip ] && unzip netviz.zip || echo "No netviz.zip found" 
 WORKDIR /app
 EXPOSE 80
 CMD ["/app/java.sh"]
