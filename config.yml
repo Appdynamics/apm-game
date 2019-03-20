@@ -1,10 +1,16 @@
+global:
+  machine: true
+  netviz: true
+  loaders: true
+  services: true
+
 apm:
   controller: http://localhost:8090
   accountName: customer1
   accountAccessKey:
   applicationName: apm_game
   eventsService: http://localhost:9080
-  globalAccountName: 
+  globalAccountName:
   eum:
     appKey:
     adrumExtUrlHttp: http://cdn.appdynamics.com
