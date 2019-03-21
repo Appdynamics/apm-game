@@ -134,9 +134,8 @@ public class JavaNode {
                 String url = "jdbc:my" + call.split("\\?")[0];
                 Connection connection = DriverManager.getConnection(url, "root", "root");
 
-                Statement stmt = connection.createStatement();
-
-                stmt.executeQuery(call.split("\\?")[1]);
+                PreparedStatement stmt = connection.prepareStatement(call.split("\\?query=")[1]);
+                stmt.execute();
 
                 connection.close();
             } catch (SQLException e) {

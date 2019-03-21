@@ -20,6 +20,7 @@ var appdynamics = {
   getTransaction: function() { return {
     startExitCall: function() {},
     endExitCall: function() {},
+    addSnapshotData: function() {}
   }; }
 }
 
