@@ -21,7 +21,6 @@ import java.util.HashSet;
 
 import com.appdynamics.apm.appagent.api.AgentDelegate;
 import com.appdynamics.apm.appagent.api.DataScope;
-import com.appdynamics.apm.appagent.api.ITransactionDemarcator;
 import com.appdynamics.apm.appagent.api.IMetricAndEventReporter;
 
 import net.sf.ehcache.Cache;
@@ -33,7 +32,6 @@ import org.slf4j.LoggerFactory;
 public class JavaNode {
 
     protected static Cache cache;
-    private static ITransactionDemarcator delegate;
     private static IMetricAndEventReporter metricAndEventReporter;
 
     private static final Logger logger = LoggerFactory.getLogger(JavaNode.class);
@@ -72,15 +70,6 @@ public class JavaNode {
 
         NodeServlet.setConfig(config, apmConfig);
 
-
-        if(config.getString("agent").toString().equals("yes")) {
-            delegate = AgentDelegate.getTransactionDemarcator();
-            metricAndEventReporter = AgentDelegate.getMetricAndEventPublisher();
-            allScopes = new HashSet<DataScope>();
-            allScopes.add(DataScope.SNAPSHOTS);
-            allScopes.add(DataScope.ANALYTICS);
-        }
-
         handler.addServletWithMapping(NodeServlet.class, "/*");
 
         server.start();
@@ -98,6 +87,21 @@ public class JavaNode {
             NodeServlet.config = config;
             NodeServlet.apmConfig = apmConfig;
             NodeServlet.endpoints = config.getJsonObject("endpoints").getJsonObject("http");
+        }
+
+        public static boolean hasMetricAndEventReporter() {
+            // Depending on the setup this might throw a ClassNotFoundException or a java.lang.ExceptionInInitializerError
+            // This solution is not perfect, but makes the code robust for running without agent, with dynamic attach, etc.
+            try {
+                metricAndEventReporter = AgentDelegate.getMetricAndEventPublisher();
+                allScopes = new HashSet<DataScope>();
+                allScopes.add(DataScope.SNAPSHOTS);
+                allScopes.add(DataScope.ANALYTICS);
+                return true;
+            } catch ( Throwable t ) {
+                logger.debug("Could not get hold of metricAndEventReporter: " + t.getMessage());
+                return false;
+            }
         }
 
         protected String buildResponse(int timeout) {
@@ -261,7 +265,7 @@ public class JavaNode {
         }
 
         protected String processData(JsonObject data) {
-            if(metricAndEventReporter == null) {
+            if(!hasMetricAndEventReporter()) {
                 return "Data not processed: no agent installed.";
             }
 
