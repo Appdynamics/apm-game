@@ -1,0 +1,35 @@
+global:
+  machine: false
+
+apm:
+  applicationName: apm-game-tutorial-dynamic-attach
+  controller:
+  accountName:
+  accountAccessKey:
+  eventsService:
+  globalAccountName:
+
+services:
+  frontend:
+    type: java
+    agent: no
+    endpoints:
+      http:
+        /list:
+          - http://backend/list/items
+          - cache,128
+  backend:
+    type: java
+    agent: no
+    endpoints:
+      http:
+        /list/items:
+          - slow,1024
+
+loaders:
+  browser:
+    type: puppeteer
+    wait: 15
+    count: 1
+    urls:
+      - http://frontend/list

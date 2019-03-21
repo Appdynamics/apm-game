@@ -181,7 +181,19 @@ Play around with the data collectors. Here are a few things you can try it:
 
 With those capabilities you are already able to build some good environments with business data. Of course, you might want to have some relationship in your data, for example certain products have a certain price or a certain credit card type is processed very slow. To anticipate all this possibilities, you can load a custom script from `scripts/` using the `script` command. Review the `sample.js` and try to come up with your own example.
 
-## Step 6 - Extend & Contribute
+## Step 6 - Run with Dynamic Attach
+
+With `step-6.yml` we go back to the simple environment we had at the beginning: a frontend and a backend java application. The difference is, that we start the environment without machine agent and the application agents are also disabled, because we want to use [Dynamic Attach](https://github.com/Appdynamics/Dynamic-Agent-MA) to instrument the applications after startup. Just run `./run.sh tutorial/step-6.yml` and wait until the load is generated. Next, clone the [Dynamic-Agent-MA](https://github.com/Appdynamics/Dynamic-Agent-MA) repository, edit the controller.env to contain your credentials and add the following two lines to the end:
+
+```
+TIER_NAME_FROM=CONTAINER_LABEL
+TIER_NAME_FROM_VALUE=service-name
+```
+
+Execute the `run.sh` and wait a few minutes, then check with your AppDynamics Controller, that the agents have been attached and that you can see your application being instrumented.
+
+
+## Step 7 - Extend & Contribute
 
 After you finished step 5, you should be able to leverage all the capabilities provided by APM Game. At same point, you will find some bugs or miss some features. In this case, open an issue at https://github.com/Appdynamics/apm-game/issues. If you are able to fix the bug yourself or implement the feature, please do so and provide a pull request. To get you started, follow these instructions to add some simple `hello world` features:
 
@@ -351,7 +363,7 @@ The example above first executes a call to another service, called backend, then
 
 - **Commands** are like lines of code, that are executed by a service. You can call as many of them as you like to define an endpoint.
   - `http://<service>/<endpoint>`: Call another service via http.
-  - `sql://<service>/<database>?query=<query>` (php only): Call a database service via SQL.
+  - `sql://<service>/<database>?query=<query>` (php & java): Call a database service via SQL.
   - `sleep,<timeout>`: Stop processing for `<timeout>` milliseconds. Note, that the call graph will contain a language-specific `sleep` method, so use it especially with agent-less services and prefer `slow` for those having an agent.
   - `slow,<timeout>`: Slow down processing by around `<timeout>` milliseconds. The timeout is not accurate, so it will most of the time longer than the value given in `<timeout>`.
   - `cache,<timeout>`: Call a remote service of type cache. For Java this is ehcache2, for PHP and nodejs there is no real cache implementation, but they will tell you that a redis service was called.
