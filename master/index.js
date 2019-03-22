@@ -29,7 +29,7 @@ try {
   const config = yaml.safeLoad(fs.readFileSync(process.argv[2], 'utf8'));
   const {apm, services, loaders} = config
 
-  global = Object.assign({machine: true, netviz: true, services: true, loaders: true}, config.global)
+  global = Object.assign({machine: true, netviz: true, services: true, loaders: true, dbmon: 'maybe'}, config.global)
 
   const controller = url.parse(apm.controller)
 
@@ -47,6 +47,8 @@ try {
 
       if(!service.disabled) {
         const dockerImage = imagePrefix + '/' + service.type
+
+        global.dbmon = global.dbmon === 'maybe' ? (service.type === 'mysql') : global.dbmon
 
         console.log('==== Starting ' + name)
 
@@ -119,6 +121,7 @@ try {
     })
   } else {
     console.log('Skipping services.')
+    global.dbmon = global.dbmon === 'maybe' ? false : global.dbmon
   }
 
   if(global.loaders) {
@@ -222,7 +225,6 @@ try {
 
   if(global.netviz) {
     var netvizAgentName = `${containerPrefix}-netviz-agent`
-    // docker run -d --network=host --cap-add=NET_ADMIN --cap-add=NET_RAW
     var netvizAgentCmd = ['docker', 'run', '--rm',
                                            '--network=host',
                                            '--cap-add=NET_ADMIN',
@@ -235,12 +237,36 @@ try {
                  stdio: 'inherit',
                  shell: true
     })
-
     containers.push(netvizAgentName)
   } else {
     console.log('Skipping network visibility agent.')
   }
 
+  if(global.dbmon) {
+    var databaseAgentName = `${containerPrefix}-database-agent`
+    var databaseAgentCmd = ['docker', 'run', '-e', `APPDYNAMICS_CONTROLLER_HOST_NAME=${controller.hostname}`,
+                                            '-e', `APPDYNAMICS_CONTROLLER_PORT=${controller.port}`,
+                                            '-e', `APPDYNAMICS_CONTROLLER_SSL_ENABLED=${controller.protocol.startsWith('https')}`,
+                                            '-e', `APPDYNAMICS_AGENT_ACCOUNT_NAME=${apm.accountName}`,
+                                            '-e', `APPDYNAMICS_AGENT_ACCOUNT_ACCESS_KEY=${apm.accountAccessKey}`,
+                                            '-e', `APPDYNAMICS_DATABASE_AGENT_NAME=${imagePrefix}-${containerPrefix}-database-agent`,
+                                            '--label', 'container-type=database-agent',
+                                            '--rm',
+                                            '--network', dockerNetwork,
+                                            '--name', databaseAgentName,
+                                            '--network-alias=databases-agent'
+                                            ]
+
+    databaseAgentCmd.push(imagePrefix + '/dbmon')
+
+    spawn(shellescape(databaseAgentCmd), {
+                  stdio: 'inherit',
+                  shell: true
+    })
+    containers.push(databaseAgentName)
+  } else {
+    console.log('Skipping database agent.')
+  }
 
 } catch (e) {
   console.log(e);

@@ -50,6 +50,7 @@ done;
 
 docker build -t "${IMAGE_PREFIX}/machine" infrastructure/machine;
 docker build -t "${IMAGE_PREFIX}/netviz" infrastructure/netviz;
+docker build -t "${IMAGE_PREFIX}/dbmon" infrastructure/dbmon;
 
 docker network create ${DOCKER_NETWORK}
 docker volume create ${DOCKER_LOGS_VOLUME}
