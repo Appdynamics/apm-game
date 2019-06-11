@@ -55,7 +55,9 @@ docker build -t "${IMAGE_PREFIX}/dbmon" infrastructure/dbmon;
 docker network create ${DOCKER_NETWORK}
 docker volume create ${DOCKER_LOGS_VOLUME}
 
-node master/index.js "${CONFIG}" "${IMAGE_PREFIX}" "${DOCKER_NETWORK}" "${DOCKER_LOGS_VOLUME}" "${CONTAINER_PREFIX}" "${CUSTOM_CODE_DIR}"
+NETWORK_DETAILS=$(docker network inspect ${DOCKER_NETWORK})
+
+node master/index.js "${CONFIG}" "${IMAGE_PREFIX}" "${DOCKER_NETWORK}" "${DOCKER_LOGS_VOLUME}" "${CONTAINER_PREFIX}" "${CUSTOM_CODE_DIR}" "${NETWORK_DETAILS}"
 
 docker network rm ${DOCKER_NETWORK}
 docker volume rm ${DOCKER_LOGS_VOLUME}

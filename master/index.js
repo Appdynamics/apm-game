@@ -12,6 +12,15 @@ const containerPrefix = process.argv[6]
 
 var localCustomCodeDir = process.argv[7]
 
+const gatewayIP = '127.0.0.1'
+
+try {
+  var dockerNetworkDetails = JSON.parse(process.argv[8])
+  const gatewayIP = dockerNetworkDetails[0].IPAM.Config[0].Gateway
+} catch(e) {
+  console.log('WARNING: No network configuration provided, could not identify default gateway.')
+}
+
 var containers = []
 
 process.on('SIGINT', function () {
@@ -88,7 +97,7 @@ try {
             cmd.push('-e', `APPDYNAMICS_AGENT_APPLICATION_NAME=${apm.applicationName}`)
             cmd.push('-e', `APPDYNAMICS_AGENT_ACCOUNT_NAME=${apm.accountName}`)
             cmd.push('-e', `APPDYNAMICS_AGENT_ACCOUNT_ACCESS_KEY=${apm.accountAccessKey}`)
-            cmd.push('-e', `APPDYNAMICS_NETVIZ_AGENT_HOST=192.168.144.6`)
+            cmd.push('-e', `APPDYNAMICS_NETVIZ_AGENT_HOST=${gatewayIP}`)
             cmd.push('-e', `APPDYNAMICS_NETVIZ_AGENT_PORT=3892`)
             cmd.push('-e', `APPDYNAMICS_AGENT_TIER_NAME=${name}`)
             cmd.push('-e', `APPDYNAMICS_AGENT_NODE_NAME=${name}`)
