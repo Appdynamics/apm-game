@@ -224,16 +224,33 @@ Configurations for **APM Game** are given in YAML files. By default the `run.sh`
 ./run.sh configs/myconfig.yml
 ```
 
-The configuration has 3 top-level sections: **apm**, **services** and **loaders**:
+The configuration has 5 top-level sections: **global**, **apm**, **services**, **loaders** and **chaos**:
 
 ```YAML
+global:
+  ...
 apm:
   ...
 services:
   ...
 loaders:
   ...
+chaos:
+  ...
 ```
+
+## Global
+
+The **global** section is optional. It can be used to enable or disable certain features of the simulation:
+
+- **machine**: Run with AppDynamics machine agent (default: true).
+- **netviz**: Run with AppDynamics network visibility agent (default: true).
+- **dbmon**: Run with AppDynamics database monitoring agent (default: 'maybe' -- it is only run if a database node is available).
+- **loaders**: Run with containers that generate load (default: true).
+- **services**: Run with containers that provide services (default: true).
+- **chaos**: Run with containers that generate chaos (default: true).
+
+Most of the time you don't need to change any of these default settings. Use them, if you for example have an independent machine agent running or if you need to test certain functionalities without having to run all other components.
 
 ## APM
 
@@ -406,7 +423,7 @@ For the example above two databases are generated, shop and fulfilment, and with
 
 ## Loaders
 
-In this section you can provide multiple load giving services. The name you provide is currently only used to name the docker container:
+In this section you can provide multiple load giving services. The name you provide is used to name the docker container:
 
 ```YAML
 loaders:
@@ -426,6 +443,29 @@ All loaders take a list of `urls` and call them in the sequence given endlessly.
 
 Note, that for each sequence of requests a `unique_session_id` is generated and send to the services as `GET`/`POST` parameter. A node.js frontend is picking up this value automatically for snapshots and analytics data. For PHP and Java you need to configure the data collectors in the UI.
 
+## Chaos
+
+In this section you can provide multiple chaos generators. The name you provide is used to name the docker container:
+
+```YAML
+chaos:
+  pause-frontend:
+    type: pumba
+    interval: 1m
+    target: [frontend, backend]
+    command: pause
+    duration: 5s  
+```
+
+Those chaos generators inject issues into your network or your containers based on the provided parameters. Right now, there is a single type of generator, based on [pumba](https://github.com/alexei-led/pumba/). To configure a chaos generator, provide the following parameters:
+
+- `type: pumba`: Set the type of the chaos generator. Currently this is optional, since there is only a single chaos generator type.
+- `interval: <time>`: Set the time interval which is used to periodically generate chaos. Use with optional unit suffix: 'ms/s/m/h'
+- `duration: <time>`: Set the duration of the chaos generation. Use with optional unit suffix: 'ms/s/m/h'
+- `target`: <array|string>`: Set the target service or services by name.
+- `command: <pause|netem-delay|netem-loss>`: Provide one of the commands supported. Depending on the command you need to provide further arguments.
+- `probability: <value>` (netem-loss only): Set the probability for package loss.
+- `time: <value>` (netem-delay only): Set the delay time in milliseconds.
 
 # Develop
 

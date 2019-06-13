@@ -12,11 +12,11 @@ const containerPrefix = process.argv[6]
 
 var localCustomCodeDir = process.argv[7]
 
-const gatewayIP = '127.0.0.1'
+var gatewayIP = '127.0.0.1'
 
 try {
   var dockerNetworkDetails = JSON.parse(process.argv[8])
-  const gatewayIP = dockerNetworkDetails[0].IPAM.Config[0].Gateway
+  gatewayIP = dockerNetworkDetails[0].IPAM.Config[0].Gateway
 } catch(e) {
   console.log('WARNING: No network configuration provided, could not identify default gateway.')
 }
@@ -36,9 +36,9 @@ process.on('SIGINT', function () {
 
 try {
   const config = yaml.safeLoad(fs.readFileSync(process.argv[2], 'utf8'));
-  const {apm, services, loaders} = config
+  const {apm, services, loaders, chaos} = config
 
-  global = Object.assign({machine: true, netviz: true, services: true, loaders: true, dbmon: 'maybe'}, config.global)
+  global = Object.assign({machine: true, netviz: true, services: true, loaders: true, dbmon: 'maybe', chaos: true}, config.global)
 
   const controller = url.parse(apm.controller)
 
@@ -275,6 +275,63 @@ try {
     containers.push(databaseAgentName)
   } else {
     console.log('Skipping database agent.')
+  }
+
+  if(global.chaos) {
+    Object.keys(chaos).forEach(function(name) {
+      const generator = {
+        ...chaos[name],
+        name: name
+      }
+
+      if(generator.disabled) {
+        return
+      }
+
+      const generatorName = `${containerPrefix}-chaos-${generator.name}`
+
+      // generator.type currently only provides one type (pumba)
+      const chaosImg = 'gaiaadm/pumba'
+
+      const chaosSubCmd = generator.command.split('-')
+
+      let chaosCmd = ['docker', 'run', '-v', '/var/run/docker.sock:/var/run/docker.sock',
+                                            '--rm',
+                                            '--name', generatorName,
+                                            chaosImg,
+                                            '-l', 'info',
+                                            '-i', generator.interval,
+                                            '--random',
+                                        ]
+      switch(chaosSubCmd[0]) {
+        case 'pause':
+          chaosCmd.push('pause', '--duration', generator.duration)
+          break;
+        case 'netem':
+          chaosCmd.push('netem', '--interface', 'eth0', '--duration', generator.duration, chaosSubCmd[1])
+          switch(chaosSubCmd[1]) {
+            case 'loss':
+              chaosCmd.push('-p', generator.probability)
+            break;
+            case 'delay':
+              chaosCmd.push('-t', generator.time)
+            break;
+          }
+          break;
+      }
+
+      let target = (Array.isArray(generator.target) ? generator.target : [generator.target]).map(t => `${containerPrefix}-${t}`)
+
+      chaosCmd = chaosCmd.concat(target)
+
+      spawn(shellescape(chaosCmd), {
+                   stdio: 'inherit',
+                   shell: true
+      })
+      containers.push(generatorName)
+    })
+  } else {
+    console.log('Skipping chaos generators.')
   }
 
 } catch (e) {

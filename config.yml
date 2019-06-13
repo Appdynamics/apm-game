@@ -3,6 +3,7 @@ global:
   netviz: true
   loaders: true
   services: true
+  chaos: true
 
 apm:
   controller: http://localhost:8090
@@ -136,3 +137,25 @@ loaders:
       - http://frontend/addtocart
       - http://frontend/addtocart
       - http://frontend/checkout
+
+chaos:
+  pause-cdn:
+    type: pumba
+    interval: 1m
+    target: cdn
+    command: pause
+    duration: 5s
+  network-loss:
+    type: pumba
+    interval: 5m
+    target: [frontend, backend]
+    command: netem-loss
+    duration: 1m
+    probability: 25
+  network-delay:
+    type: pumba
+    interval: 8m
+    target: backend-v3
+    command: netem-delay
+    duration: 30s
+    time: 5000
