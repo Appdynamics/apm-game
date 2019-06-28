@@ -36,7 +36,7 @@ process.on('SIGINT', function () {
 
 try {
   const config = yaml.safeLoad(fs.readFileSync(process.argv[2], 'utf8'));
-  const {apm, services, loaders, chaos} = config
+  const {apm = {}, services = {}, loaders = {}, chaos = {}, liveDebug = {}} = config
 
   global = Object.assign({machine: true, netviz: true, services: true, loaders: true, dbmon: 'maybe', chaos: true}, config.global)
 
@@ -55,7 +55,7 @@ try {
       }
 
       if(!service.disabled) {
-        const dockerImage = imagePrefix + '/' + service.type
+        const dockerImage = service.type === 'custom' ? service.image : imagePrefix + '/' + service.type
 
         global.dbmon = global.dbmon === 'maybe' ? (service.type === 'mysql') : global.dbmon
 
@@ -101,6 +101,13 @@ try {
             cmd.push('-e', `APPDYNAMICS_NETVIZ_AGENT_PORT=3892`)
             cmd.push('-e', `APPDYNAMICS_AGENT_TIER_NAME=${name}`)
             cmd.push('-e', `APPDYNAMICS_AGENT_NODE_NAME=${name}`)
+
+            if(typeof liveDebug === 'object' && typeof liveDebug.token === 'string' && liveDebug.token.length === 64) {
+              cmd.push('-e', `ROOKOUT_TOKEN=${liveDebug.token}`)
+              cmd.push('-e', `WITH_LIVEDEBUG=1`)
+            } else {
+              cmd.push('-e', `WITH_LIVEDEBUG=0`)
+            }
         }
 
         if(service.type === 'mysql') {

@@ -10,4 +10,5 @@ RUN cp /opt/appdynamics/javaagent.jar /app/
 RUN cd /opt/appdynamics/ver*/external-services/ ; [ -f netviz.zip ] && unzip netviz.zip || echo "No netviz.zip found"
 WORKDIR /app
 EXPOSE 80
+COPY extras/* /app/
 CMD ["/app/entrypoint.sh"]
