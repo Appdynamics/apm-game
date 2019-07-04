@@ -298,7 +298,7 @@ In this section you provide all the tiers/nodes and remote services that are con
 
 A service can have the following properties:
 
-- **type** (required): Define the type of this service. You can currently use the following: `java`, `nodejs`, `php` and `mysql`. **Hint**: Prefer nodejs for agentless services and also if you want to build a big environment, since it comes with the lowest overhead.
+- **type** (required): Define the type of this service. You can currently use the following: `java`, `nodejs`, `php`, `mysql` and `custom`. **Hint**: Prefer nodejs for agentless services and also if you want to build a big environment, since it comes with the lowest overhead.
 - **agent**: Set to `no` or `yes` to disable or enable the appdynamics agent.
 - **port**: Set a port which will be exposed to your docker host. So if you run locally, you can access this service via `http://localhost:<port>`
 - **endpoints** (java, nodejs, php only): Define multiple endpoints for this service. Read below to learn how to define endpoints.
@@ -307,6 +307,7 @@ A service can have the following properties:
 - **options** (nodejs only): For nodejs you can set an option called `connectionDelay`, that will force the webserver to wait the given number of milliseconds before it accepts a connection.
 - **disabled**: Set this to `yes` to temporarily disable the service without removing it from the configuration file.
 - **databases** (mysql only): Define multiple databases, that are created on startup on this database service. Read below to learn how to define databases and tables.
+- **image** (custom only): If you set the `type` to custom, you can define any docker image to be used for this service.
 
 Without endpoints and databases a configuration might look like the following:
 
