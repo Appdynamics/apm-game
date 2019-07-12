@@ -42,12 +42,19 @@ Install all prerequisites:
   - [Docker](https://www.docker.com/)
   - [Node.JS](https://nodejs.org/en/)
 
+Agent prerequisites (from download.appdynamics.com or the "Getting Started Wizard" of your controller):
+  - PHP Agent 
+  - Java Agent
+  - DB Agent
+
 Copy agent files into the directories for the java and PHP node:
 
 ```shell
 mv <PATH>/appdynamics-php-agent-x64-linux-<VERSION>.tar.bz2 nodes/php
 mv <PATH>/AppServerAgent-<VERSION>.zip nodes/java
+mv <PATH>/db-agent-<VERSION>.zip infrastructure/dbmon
 ```
+
 
 **Note:** The agent for nodejs is installed automatically.
 
