@@ -43,7 +43,7 @@ Install all prerequisites:
   - [Node.JS](https://nodejs.org/en/)
 
 Agent prerequisites (from download.appdynamics.com or the "Getting Started Wizard" of your controller):
-  - PHP Agent 
+  - PHP Agent
   - Java Agent
   - DB Agent
 

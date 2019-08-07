@@ -4,6 +4,7 @@ const process = require('process')
 const {spawn} = require('child_process')
 const url = require('url');
 const shellescape = require('shell-escape')
+const chalk = require('chalk')
 
 const imagePrefix = process.argv[3]
 const dockerNetwork = process.argv[4]
@@ -40,12 +41,17 @@ try {
 
   global = Object.assign({machine: true, netviz: true, services: true, loaders: true, dbmon: 'maybe', chaos: true}, config.global)
 
-  const controller = url.parse(apm.controller)
-
-  if (typeof services !== 'object') {
-    console.log('Could not read services list!')
+  if(typeof apm.controller !== 'string') {
+    console.error(chalk.red('Could not read controller properties!'))
     process.exit()
   }
+
+  if (typeof services !== 'object') {
+    console.error(chalk.red('Could not read services list!'))
+    process.exit()
+  }
+
+  const controller = url.parse(apm.controller)
 
   if(global.services) {
     Object.keys(services).forEach(function(name) {
@@ -59,7 +65,7 @@ try {
 
         global.dbmon = global.dbmon === 'maybe' ? (service.type === 'mysql') : global.dbmon
 
-        console.log('==== Starting ' + name)
+        console.log(chalk.green('==== Starting ' + name))
 
         var cmd = ['docker', 'run', '-e', `APP_CONFIG=${JSON.stringify(service)}`,
                                     '-e', `APM_CONFIG=${JSON.stringify(apm)}`,
@@ -136,7 +142,7 @@ try {
       }
     })
   } else {
-    console.log('Skipping services.')
+    console.log(chalk.yellow('Skipping services.'))
     global.dbmon = global.dbmon === 'maybe' ? false : global.dbmon
   }
 
@@ -193,7 +199,7 @@ try {
       }
     })
   } else {
-    console.log('Skipping loaders.')
+    console.log(chalk.yellow('Skipping loaders.'))
   }
 
   if(global.machine) {
@@ -236,7 +242,7 @@ try {
     })
     containers.push(machineAgentName)
   } else {
-    console.log('Skipping machine agent.')
+    console.log(chalk.yellow('Skipping machine agent.'))
   }
 
   if(global.netviz) {
@@ -255,7 +261,7 @@ try {
     })
     containers.push(netvizAgentName)
   } else {
-    console.log('Skipping network visibility agent.')
+    console.log(chalk.yellow('Skipping network visibility agent.'))
   }
 
   if(global.dbmon) {
@@ -281,7 +287,7 @@ try {
     })
     containers.push(databaseAgentName)
   } else {
-    console.log('Skipping database agent.')
+    console.log(chalk.yellow('Skipping database agent.'))
   }
 
   if(global.chaos) {
@@ -338,9 +344,9 @@ try {
       containers.push(generatorName)
     })
   } else {
-    console.log('Skipping chaos generators.')
+    console.log(chalk.yellow('Skipping chaos generators.'))
   }
 
 } catch (e) {
-  console.log(e);
+  console.log(chalk.red(e));
 }

@@ -1,7 +1,26 @@
 #!/bin/bash
+WITH_BUILD=1
+
+while getopts ":n" opt; do
+	case $opt in
+		n)
+			echo "Will skip build."
+			WITH_BUILD=0
+			shift $((OPTIND-1))
+		;;
+		\?)
+			echo "Unknown option ${OPTARG}" >&2
+			shift $((OPTIND-1))
+		;;
+  esac
+done
 
 CONFIG=$1
 CONTAINER_PREFIX=$2
+
+
+echo $CONFIG
+echo $CONTAINER_PREFIX
 
 if [ ! -f "${CONFIG}" ]
 then
@@ -28,29 +47,10 @@ then
 	exit
 fi
 
-(
-  cd master/ || exit
-  npm install
-);
-
-for DIR in nodes/*;
-do
-  if [ -d $DIR ] ; then
-    echo "Building ${IMAGE_PREFIX}/`basename $DIR`..."
-    docker build -t "${IMAGE_PREFIX}/`basename $DIR`" $DIR;
-  fi
-done;
-
-for DIR in loaders/*;
-do
-  if [ -d $DIR ] ; then
-    docker build -t "${IMAGE_PREFIX}/`basename $DIR`" $DIR;
-  fi
-done;
-
-docker build -t "${IMAGE_PREFIX}/machine" infrastructure/machine;
-docker build -t "${IMAGE_PREFIX}/netviz" infrastructure/netviz;
-docker build -t "${IMAGE_PREFIX}/dbmon" infrastructure/dbmon;
+if [ "${WITH_BUILD}" -eq "1" ]
+then
+	./build.sh "${IMAGE_PREFIX}"
+fi
 
 docker network create ${DOCKER_NETWORK}
 docker volume create ${DOCKER_LOGS_VOLUME}
