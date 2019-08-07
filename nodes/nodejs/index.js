@@ -381,8 +381,14 @@ var server = app.listen(port, () => console.log(
   ? ` agent, reporting to ${apm.controller}`
   : 'out agent'}`))
 
-if(config.hasOwnProperty('options') && config.options.hasOwnProperty('connectionDelay')) {
+if(config.hasOwnProperty('options')) {
   server.on('connection', (socket) => {
-    sleep.msleep(config.options.connectionDelay)
+    if(config.options.hasOwnProperty('connectionDelay')) {
+      sleep.msleep(config.options.connectionDelay)
+    }
+    if(config.options.hasOwnProperty('lossRate') && parseFloat(config.options.lossRate) >= Math.random()) {
+      socket.end()
+      throw new Error('An error occurred')
+    }
   })
 }

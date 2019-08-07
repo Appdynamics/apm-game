@@ -49,6 +49,7 @@ fi
 
 if [ "${WITH_BUILD}" -eq "1" ]
 then
+	chmod +x ./build.sh
 	./build.sh "${IMAGE_PREFIX}"
 fi
 

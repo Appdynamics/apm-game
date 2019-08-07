@@ -311,7 +311,7 @@ A service can have the following properties:
 - **endpoints** (java, nodejs, php only): Define multiple endpoints for this service. Read below to learn how to define endpoints.
 - **aliases**: Provide a list of network name aliases. This is useful for agentless services, that serve as multiple remote services, e.g. multiple payment providers. **Hint**: You can use any name for an alias, even some existing domain names (e.g. www.appdynamics.com)!
 - **labels**: You can provide a list of docker labels, that will be visible in the "container" view.
-- **options** (nodejs only): For nodejs you can set an option called `connectionDelay`, that will force the webserver to wait the given number of milliseconds before it accepts a connection.
+- **options** (nodejs only): For nodejs you can set options `connectionDelay` and `lossRate`. `connectionDelay` will force the webserver to wait the given number of milliseconds before it accepts a connection. `lossRate` is a number between 0 and 1 that defines the probability, if a request is terminated early.
 - **disabled**: Set this to `yes` to temporarily disable the service without removing it from the configuration file.
 - **databases** (mysql only): Define multiple databases, that are created on startup on this database service. Read below to learn how to define databases and tables.
 - **image** (custom only): If you set the `type` to custom, you can define any docker image to be used for this service.
