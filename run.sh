@@ -1,31 +1,45 @@
 #!/bin/bash
 WITH_BUILD=1
+DEFAULT_FILE_NAME="defaults.yml"
+VERBOSITY=1
 
-while getopts ":n" opt; do
+while getopts ":nqd:" opt; do
 	case $opt in
 		n)
-			echo "Will skip build."
+			echo -e "\033[33mWill skip build.\033[0m"
 			WITH_BUILD=0
-			shift $((OPTIND-1))
+		;;
+		q)
+			VERBOSITY=0
+		;;
+		d)
+			DEFAULT_FILE_NAME=${OPTARG}
+			if [ ! -f "${DEFAULT_FILE_NAME}" ]
+			then
+				echo -e "\033[31mDefault configuration '${DEFAULT_FILE_NAME}' not found. Please verify the file path\033[0m"
+				exit
+			fi
 		;;
 		\?)
 			echo "Unknown option ${OPTARG}" >&2
-			shift $((OPTIND-1))
 		;;
   esac
 done
+shift $((OPTIND-1))
 
 CONFIG=$1
 CONTAINER_PREFIX=$2
 
-
-echo $CONFIG
-echo $CONTAINER_PREFIX
-
-if [ ! -f "${CONFIG}" ]
+if [ -z "${CONFIG}" ]
 then
 	CONTAINER_PREFIX="apm-game"
 	CONFIG=config.yml
+fi
+
+if [ ! -f "${CONFIG}" ]
+then
+	echo -e "\033[31mConfiguration '${CONFIG}' not found. Please verify the file path\033[0m"
+	exit
 fi
 
 if [ -z "${CONTAINER_PREFIX}" ]
@@ -58,7 +72,7 @@ docker volume create ${DOCKER_LOGS_VOLUME}
 
 NETWORK_DETAILS=$(docker network inspect ${DOCKER_NETWORK})
 
-node master/index.js "${CONFIG}" "${IMAGE_PREFIX}" "${DOCKER_NETWORK}" "${DOCKER_LOGS_VOLUME}" "${CONTAINER_PREFIX}" "${CUSTOM_CODE_DIR}" "${NETWORK_DETAILS}"
+node master/index.js "${CONFIG}" "${IMAGE_PREFIX}" "${DOCKER_NETWORK}" "${DOCKER_LOGS_VOLUME}" "${CONTAINER_PREFIX}" "${CUSTOM_CODE_DIR}" "${NETWORK_DETAILS}" "${DEFAULT_FILE_NAME}" "${VERBOSITY}"
 
 docker network rm ${DOCKER_NETWORK}
 docker volume rm ${DOCKER_LOGS_VOLUME}

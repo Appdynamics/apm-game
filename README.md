@@ -35,7 +35,7 @@ APM Game implements and uses the following features of AppDynamics:
 Clone this project:
 
 ```shell
-git clone git@github.com:svrnm/apm-game.git
+git clone git@github.com:AppDynamics/apm-game.git
 ```
 
 Install all prerequisites:

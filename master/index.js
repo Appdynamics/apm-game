@@ -5,6 +5,8 @@ const {spawn} = require('child_process')
 const url = require('url');
 const shellescape = require('shell-escape')
 const chalk = require('chalk')
+const merge = require('lodash.merge');
+
 
 const imagePrefix = process.argv[3]
 const dockerNetwork = process.argv[4]
@@ -12,6 +14,8 @@ const dockerLogsVolume = process.argv[5]
 const containerPrefix = process.argv[6]
 
 var localCustomCodeDir = process.argv[7]
+
+const verbosity = parseInt(process.argv[10])
 
 var gatewayIP = '127.0.0.1'
 
@@ -24,19 +28,38 @@ try {
 
 var containers = []
 
+function runCmd(cmd, msg = false) {
+  console.log(msg ? msg : `Running: ${cmd}`)
+  return spawn(cmd, {
+    stdio: verbosity > 0 ? 'inherit' : 'ignore',
+    shell: true
+  })
+}
+
 process.on('SIGINT', function () {
-  console.log('Terminating ...')
+  console.log(chalk.blue('Terminating ...'))
   containers.forEach(function(container) {
-    console.log(`Stopping container ${container} ...`)
-    spawn(`docker stop ${container}`, {
-      stdio: 'inherit',
-      shell: true
-    })
+    runCmd(`docker stop ${container}`, chalk.blue(`Stopping container ${container} ...`))
   })
 });
 
+var defaultConfig = {}
+
 try {
-  const config = yaml.safeLoad(fs.readFileSync(process.argv[2], 'utf8'));
+  defaultConfig = yaml.safeLoad(fs.readFileSync(process.argv[9], 'utf8'));
+} catch (err) {
+  if(err.code !== 'ENOENT') {
+    console.error(chalk.red(`Could not read defaults.yml, starting without it. Error was ${err.message}`))
+  }
+}
+
+try {
+  console.log(chalk.green(`Loading config from ${process.argv[2]}`))
+  const config = merge(defaultConfig, yaml.safeLoad(fs.readFileSync(process.argv[2], 'utf8')));
+
+  console.log(config)
+  process.exit()
+
   const {apm = {}, services = {}, loaders = {}, chaos = {}, liveDebug = {}} = config
 
   global = Object.assign({machine: true, netviz: true, services: true, loaders: true, dbmon: 'maybe', chaos: true}, config.global)
@@ -51,21 +74,21 @@ try {
     process.exit()
   }
 
+  if (!(apm.controller.startsWith('https://') || apm.controller.startsWith('http://'))) {
+    console.error(chalk.red(`Please provide a full URL, starting with a protocol (http:// or https://) for the controller: ${apm.controller}`))
+    process.exit()
+  }
   const controller = url.parse(apm.controller)
 
   if(global.services) {
     Object.keys(services).forEach(function(name) {
-      const service = {
-        ...services[name],
-        name: name
-      }
+      const service = Object.assign(services[name], { name })
+
 
       if(!service.disabled) {
         const dockerImage = service.type === 'custom' ? service.image : imagePrefix + '/' + service.type
 
         global.dbmon = global.dbmon === 'maybe' ? (service.type === 'mysql') : global.dbmon
-
-        console.log(chalk.green('==== Starting ' + name))
 
         var cmd = ['docker', 'run', '-e', `APP_CONFIG=${JSON.stringify(service)}`,
                                     '-e', `APM_CONFIG=${JSON.stringify(apm)}`,
@@ -133,10 +156,7 @@ try {
 
         cmd.push(dockerImage)
 
-        const child = spawn(shellescape(cmd), {
-          stdio: 'inherit',
-          shell: true
-        })
+        const child = runCmd(shellescape(cmd), chalk.green('[service] starting ' + name))
 
         containers.push(`${containerPrefix}-${name}`)
       }
@@ -148,10 +168,7 @@ try {
 
   if(global.loaders) {
     Object.keys(loaders).forEach(function(name) {
-      const loader = {
-        ...loaders[name],
-        name: name
-      }
+      const loader = Object.assign(loaders[name], { name })
 
       if(loader.disabled) {
         return
@@ -190,10 +207,7 @@ try {
 
         cmd.push(dockerImage)
 
-        const child = spawn(shellescape(cmd), {
-                    stdio: 'inherit',
-                    shell: true
-        })
+        const child = runCmd(shellescape(cmd), chalk.green('[loader] starting ' + name))
 
         containers.push(containerName)
       }
@@ -236,13 +250,10 @@ try {
     }
     machineAgentCmd.push(imagePrefix + '/machine')
 
-    spawn(shellescape(machineAgentCmd), {
-                  stdio: 'inherit',
-                  shell: true
-    })
+    runCmd(shellescape(machineAgentCmd), chalk.green('[infrastructure] starting machine agent'))
     containers.push(machineAgentName)
   } else {
-    console.log(chalk.yellow('Skipping machine agent.'))
+    console.log(chalk.yellow('[infrastructure] skipping machine agent.'))
   }
 
   if(global.netviz) {
@@ -255,13 +266,10 @@ try {
                                            '-v', `${dockerLogsVolume}:/logs`,
                                            imagePrefix + '/netviz']
 
-    spawn(shellescape(netvizAgentCmd), {
-                 stdio: 'inherit',
-                 shell: true
-    })
+    runCmd(shellescape(netvizAgentCmd), chalk.green('[infrastructure] starting network visibility agent'))
     containers.push(netvizAgentName)
   } else {
-    console.log(chalk.yellow('Skipping network visibility agent.'))
+    console.log(chalk.yellow('[infrastructure] skipping network visibility agent.'))
   }
 
   if(global.dbmon) {
@@ -281,21 +289,15 @@ try {
 
     databaseAgentCmd.push(imagePrefix + '/dbmon')
 
-    spawn(shellescape(databaseAgentCmd), {
-                  stdio: 'inherit',
-                  shell: true
-    })
+    runCmd(shellescape(databaseAgentCmd), chalk.green('[infrastructure] starting database agent'))
     containers.push(databaseAgentName)
   } else {
-    console.log(chalk.yellow('Skipping database agent.'))
+    console.log(chalk.yellow('[infrastructure] skipping database agent.'))
   }
 
   if(global.chaos) {
     Object.keys(chaos).forEach(function(name) {
-      const generator = {
-        ...chaos[name],
-        name: name
-      }
+      const generator = Object.assign(chaos[name], { name })
 
       if(generator.disabled) {
         return
@@ -337,14 +339,15 @@ try {
 
       chaosCmd = chaosCmd.concat(target)
 
-      spawn(shellescape(chaosCmd), {
-                   stdio: 'inherit',
-                   shell: true
-      })
+      runCmd(shellescape(chaosCmd), chalk.green(`[chaos] starting ${name}`))
       containers.push(generatorName)
     })
   } else {
     console.log(chalk.yellow('Skipping chaos generators.'))
+  }
+
+  if(verbosity < 1) {
+    console.log(chalk.blue('Running in quiet mode, use docker attach to read container output'))
   }
 
 } catch (e) {
