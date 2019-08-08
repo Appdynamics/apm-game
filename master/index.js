@@ -57,9 +57,6 @@ try {
   console.log(chalk.green(`Loading config from ${process.argv[2]}`))
   const config = merge(defaultConfig, yaml.safeLoad(fs.readFileSync(process.argv[2], 'utf8')));
 
-  console.log(config)
-  process.exit()
-
   const {apm = {}, services = {}, loaders = {}, chaos = {}, liveDebug = {}} = config
 
   global = Object.assign({machine: true, netviz: true, services: true, loaders: true, dbmon: 'maybe', chaos: true}, config.global)
