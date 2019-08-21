@@ -1,0 +1,166 @@
+# Simulated API GW wiht uServices 
+#
+# config.yml
+apm:
+  applicationName: ** ADD yours here **
+  controller:  ** ADD yours here **
+  accountName: ** ADD yours here **
+  accountAccessKey: ** ADD yours here **
+  eventsService: ** ADD yours here **
+  globalAccountName: ** ADD yours here **
+  eum:
+    appKey: ** ADD yours here **
+    adrumExtUrlHttp: http://cdn.appdynamics.com
+    adrumExtUrlHttps: https://cdn.appdynamics.com
+    beaconUrlHttp: ** ADD yours here **
+    beaconUrlHttps: ** ADD yours here **
+        
+services:
+  apigw:
+    type: java
+    agent: yes
+    endpoints:
+      http:
+        /login:
+          - http://auth/login
+        /logout:
+          - http://auth/logout
+        /profile/getUser:
+          - http://profile/get/user
+        /profile/updateUser:
+          - http://profile/update/user
+        /profile/db:
+          - http://profile/db
+        /service1:
+          - http://uService1/step1
+        /service2:
+          - http://apigw/uService2
+          - http://apigw/uService3
+        /service3:
+          - http://uService1/step3
+        /uService1:
+          - http://uService1/step1
+        /uService2:
+          - http://uService2/step2
+        /uService3:
+          - http://uService3/step3
+        /uService4:
+          - http://uService4/step4
+  auth:
+    type: java
+    agent: yes
+    endpoints:
+      http:
+        /login:
+          - log,info,Login
+          - slow,1024
+          - call: error,500,Oops
+            probability: 0.1
+          - http://apigw/profile/getUser
+        /logout:
+          - log,info,Logout
+          - slow,1024
+          - call: error,403,Forbidden
+            probability: 0.1          
+          - http://apigw/profile/updateUser
+          - http://apigw/profile/db
+  profile:
+    type: java
+    agent: yes
+    endpoints:
+      http:
+        /get/user:
+          - log,info,Load Profile
+          - slow,1024
+          - sql://accountdb/account?query=SELECT * FROM profile
+          - call: slow,9435
+            probability: 0.13
+        /update/user:
+          - log,info,Update Profile
+          - slow,1024
+          - sql://accountdb/account?query=INSERT INTO profile(profileinfo) VALUES(test123)
+          - call: slow,9435
+            probability: 0.13
+        /db:
+          - log,info,qery db
+          - sql://accountdb/account?query=SELECT * FROM profile
+            
+  uService1:
+    type: java
+    agent: yes
+    endpoints:
+      http:
+        /step1:
+          - log,info,uService1 step1
+          - slow,512
+          - cache,128
+          - call: error, 403, Forbidden
+            probability: 0.1
+          - http://apigw/uService2
+          - call: error, 500, Oops
+            probability: 0.1
+          - http://apigw/uService3
+        /step3:
+          - log,info,uService1 step3
+          - slow,1024
+          - call: error, 403, Forbidden
+            probability: 0.2
+          - http://apigw/uService2
+          - http://apigw/uService3
+          - http://apigw/uService2
+          - http://apigw/uService4
+          
+  uService2:
+    type: java
+    agent: yes
+    endpoints:
+      http:
+        /step2:
+          - log,info,uService2 step2
+          - slow,1024
+          - call: error,403,Forbidden
+            probability: 0.2
+  uService3:
+    type: java
+    agent: yes
+    endpoints:
+      http:
+        /step3:
+          - log,info,uService3 step3
+          - slow,1024
+          - http://ext1/query
+          - http://ext2/query
+  uService4:
+    type: java
+    agent: yes
+    endpoints:
+      http:
+        /step4:
+          - log,info,uService3 step3
+          - slow,1024
+          - http://sap/query
+          
+  sap:
+    type: nodejs
+    agent: no
+    alias: [ext1, ext2, ext3]
+    endpoints:
+      http:
+        /query:
+          - slow,512
+  accountdb:
+    type: mysql
+    databases:
+      account:
+        profile: [id, user, role, profileinfo]
+loaders:
+  browser:
+    type: puppeteer
+    wait: 120
+    count: 1
+    urls:
+      - http://apigw/login
+      - http://apigw/service1
+      - http://apigw/service2
+      - http://apigw/service3
+      - http://apigw/logout
