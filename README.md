@@ -307,6 +307,7 @@ A service can have the following properties:
 
 - **type** (required): Define the type of this service. You can currently use the following: `java`, `nodejs`, `php`, `mysql` and `custom`. **Hint**: Prefer nodejs for agentless services and also if you want to build a big environment, since it comes with the lowest overhead.
 - **agent**: Set to `no` or `yes` to disable or enable the appdynamics agent.
+- **count**: Set the number of instances, that will be started for this service. 
 - **port**: Set a port which will be exposed to your docker host. So if you run locally, you can access this service via `http://localhost:<port>`
 - **endpoints** (java, nodejs, php only): Define multiple endpoints for this service. Read below to learn how to define endpoints.
 - **aliases**: Provide a list of network name aliases. This is useful for agentless services, that serve as multiple remote services, e.g. multiple payment providers. **Hint**: You can use any name for an alias, even some existing domain names (e.g. www.appdynamics.com)!

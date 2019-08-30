@@ -37,9 +37,11 @@ if (config.agent === 'yes') {
     accountAccessKey: apm.accountAccessKey,
     applicationName: apm.applicationName,
     tierName: config.name,
-    nodeName: config.name,
+    nodeName: `${config.name}-${config.nodeid}`,
     libagent: true,
-    debug: true
+    debug: false,
+    btEntryPointDelayDisabled: false,
+    maxProcessSnapshotsPerPeriod: 0
   }
 
   if(apm.eventsService && apm.globalAccountName) {
@@ -56,7 +58,7 @@ if (config.agent === 'yes') {
       xd: {enable : false}
     }, apm.eum);
   }
-
+  console.log('Appdynamics Profile', appdynamicsProfile)
   appdynamics.profile(appdynamicsProfile)
 }
 
@@ -317,14 +319,14 @@ function processRequest(req, res, params) {
 
   var txn = appdynamics.getTransaction(req);
 
-  var signularityHeader = appdynamics.parseCorrelationInfo(req).headers.singularityheader
-
-  if(typeof signularityHeader !== 'undefined') {
-    const sh = new url.URLSearchParams(signularityHeader.replace(/\*/g, '&'));
-    logger.addContext('AD.requestGUID', "AD_REQUEST_GUID[" + sh.get('guid') + "]");
-  }
-
   if(txn) {
+
+    var signularityHeader = appdynamics.parseCorrelationInfo(req).headers.singularityheader
+
+    if(typeof signularityHeader !== 'undefined') {
+      const sh = new url.URLSearchParams(signularityHeader.replace(/\*/g, '&'));
+      logger.addContext('AD.requestGUID', "AD_REQUEST_GUID[" + sh.get('guid') + "]");
+    }
 
     if(params.unique_session_id) {
 

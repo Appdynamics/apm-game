@@ -1,5 +1,5 @@
 #!/bin/bash
-IMAGE_PREFIX="${1}"
+IMAGE_PREFIX="${1:-apm-game}"
 (
   cd master/ || exit
   npm install

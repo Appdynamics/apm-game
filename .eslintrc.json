@@ -1,0 +1,20 @@
+{
+  "extends": [
+    "standard"
+  ],
+  "plugins": [
+    "standard",
+    "promise",
+    "json"
+  ],
+  "env": {
+    "node": true
+  },
+  "rules": {
+    "space-before-function-paren": ["error", {
+      "anonymous": "always",
+      "named": "ignore",
+      "asyncArrow": "ignore"
+    }]
+  }
+}
