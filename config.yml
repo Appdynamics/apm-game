@@ -132,7 +132,7 @@ loaders:
   browser:
     type: puppeteer
     wait: 15
-    count: 5
+    count: 2
     urls:
       - http://frontend/addtocart
       - http://frontend/addtocart
