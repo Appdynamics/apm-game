@@ -1,8 +1,9 @@
 {
   "type": "nodejs",
-  "agent": "no",
+  "agent": "yes",
   "options": {
-    "connectionDelay": 500
+    "connectionDelay": 500,
+    "httpLibrary": "request-promise"
   },
   "endpoints": {
     "http": {

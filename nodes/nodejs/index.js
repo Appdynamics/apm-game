@@ -39,9 +39,7 @@ if (config.agent === 'yes') {
     tierName: config.name,
     nodeName: `${config.name}-${config.nodeid}`,
     libagent: true,
-    debug: false,
-    btEntryPointDelayDisabled: false,
-    maxProcessSnapshotsPerPeriod: 0
+    debug: true
   }
 
   if(apm.eventsService && apm.globalAccountName) {
@@ -69,6 +67,8 @@ const http = require('http')
 const cronmatch = require('cronmatch')
 var bodyParser = require('body-parser');
 const sleep = require('sleep');
+const rp = require('request-promise');
+
 
 log4js.configure({
   appenders: {
@@ -109,6 +109,8 @@ app.use(morgan(':remote-addr - ":method :url HTTP/:http-version" :status :res[co
 var port = parseInt(process.argv[2])
 
 const endpoints = config.endpoints.http
+
+const useRp = config.hasOwnProperty('options') && config.options.hasOwnProperty('httpLibrary') && config.options.httpLibrary == 'request-promise'
 
 Object.keys(endpoints).forEach(function(key) {
   if(!key.startsWith('/')) {
@@ -225,7 +227,7 @@ function executeCustomScript(script, req, resolve, reject) {
 function processCall(call, req) {
   return new Promise(function(resolve, reject) {
 
-    var remoteTimeout = Number.MAX_SAFE_INTEGER
+    var remoteTimeout = 1073741824
 
     var catchExceptions = true
 
@@ -266,23 +268,39 @@ function processCall(call, req) {
       var [_,timeout] = call.split(',')
       resolve(buildResponse(timeout))
     } else if (call.startsWith('http://')) {
+      if(useRp) {
+        var r = rp.get({
+          uri: url.parse(call),
+          json: true,
+          timeout: remoteTimeout
+        }).then(function(body) {
+          resolve(body)
+        }).catch(function(err) {
+          if(catchExceptions) {
+            resolve(err)
+          } else {
+            reject(err)
+          }
+        })
+      } else {
+        var opts = Object.assign(url.parse(call), {'headers': {'Content-Type': 'application/json'}})
+        var r = http.get(opts, function(res, req) {
+          const body = [];
+          res.on('data', (chunk) => body.push(chunk));
+          res.on('end', () => resolve(body.join('')));
+        }).on('error', function(err) {
+          if(catchExceptions) {
+            resolve(err)
+          } else {
+            reject(err)
+          }
+        })
+        r.setTimeout(remoteTimeout, function() {
+          reject({code: 500, message: "Read timed out"})
+        })
+      }
 
-      var opts = Object.assign(url.parse(call), {'headers': {'Content-Type': 'application/json'}})
 
-      var r = http.get(opts, function(res, req) {
-        const body = [];
-        res.on('data', (chunk) => body.push(chunk));
-        res.on('end', () => resolve(body.join('')));
-      }).on('error', function(err) {
-        if(catchExceptions) {
-          resolve(err)
-        } else {
-          reject(err)
-        }
-      })
-      r.setTimeout(remoteTimeout, function() {
-        reject({code: 500, message: "Read timed out"})
-      })
     } else if (call.startsWith('image')) {
       var [_,src] = call.split(',')
       resolve(`<img src='${src}' />`)
