@@ -70,7 +70,13 @@ function queryDatabase($url) {
   return "Database query '".$query."' executed on ".$database."@".$hostName;
 }
 
+function includeMe() {
+  include('include_me.php');
+}
+
 function processCall($call) {
+
+  includeMe();
 
   $remoteTimeout = false;
   $catchExceptions = true;
