@@ -1,0 +1,79 @@
+apm:
+  applicationName: 'AD-PHP'
+
+services:
+  frontend-v2:
+    type: php
+    agent: yes
+    port: 5000
+    endpoints:
+      http:
+        /upload:
+          - http://frontend/upload
+          - image,http://cdn/logo.png
+          - ajax,http://frontend/upload
+        /script:
+          - code,sample.js
+          - call: data
+            id: virusFoundScore
+            chance: integer,min:5,max:13
+  frontend:
+    type: php
+    agent: yes
+    port: 3000
+    endpoints:
+      http:
+        /upload:
+          - http://processing/magicByte
+          - http://processing/virus
+  processing:
+    type: php
+    agent: yes
+    endpoints:
+      http:
+        /magicByte:
+          - log,info,Checking Magic Byte
+          - cache,128
+          - call: data
+            id: magicByteCheck
+            type: string
+            value: [yes,no]
+        /virus:
+          - log,info,Scanning for virus
+          - http://virus-scanner/scan
+          - call: data
+            id: virusFoundScore
+            type: int
+            value: [0,1,5,10]
+  virus-scanner:
+    type: php
+    agent: yes
+    port: 3001
+    endpoints:
+      http:
+        scan:
+          - sleep,1500
+          - call: error,500,Scan failed
+            probability: 0.1
+          - sleep,500
+  cdn:
+    type: php
+    agent: no
+    port: 3002
+    options:
+      connectionDelay: 5000
+    endpoints:
+      http:
+        logo.png:
+          - sleep,1200
+
+
+loaders:
+  browser:
+    type: puppeteer
+    wait: 15
+    count: 1
+    urls:
+      - http://frontend/upload
+      - http://frontend-v2/upload
+      - http://frontend/upload
