@@ -164,9 +164,9 @@ cdn:
   agent: no  
   endpoints:
     http:
-      logo.png:
+      /logo.png:
         - sleep,1000      
-      script.js:
+      /script.js:
         - sleep,2000
 ```     
 
