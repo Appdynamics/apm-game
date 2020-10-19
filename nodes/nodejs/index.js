@@ -269,6 +269,7 @@ function processCall(call, req) {
       resolve(buildResponse(timeout))
     } else if (call.startsWith('http://')) {
       if(useRp) {
+
         var r = rp.get({
           uri: url.parse(call),
           json: true,
@@ -283,7 +284,16 @@ function processCall(call, req) {
           }
         })
       } else {
-        var opts = Object.assign(url.parse(call), {'headers': {'Content-Type': 'application/json'}})
+        var headers = {
+          'Content-Type': 'application/json'
+        }
+        // Turn the node into a proxy / api gateway if there is no agent installed
+        if (config.agent !== 'yes') {
+          headers = req.headers
+        }
+        var opts = Object.assign(url.parse(call), {
+          'headers': headers
+        })
         var r = http.get(opts, function(res, req) {
           const body = [];
           res.on('data', (chunk) => body.push(chunk));

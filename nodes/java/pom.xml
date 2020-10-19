@@ -11,6 +11,12 @@
         <jettyVersion>[9.4.11.v20180605,)</jettyVersion>
     </properties>
     <dependencies>
+	    <dependency>
+    <groupId>javax.servlet</groupId>
+    <artifactId>javax.servlet-api</artifactId>
+    <version>3.0.1</version>
+    <scope>provided</scope>
+</dependency>
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
