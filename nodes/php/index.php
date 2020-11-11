@@ -1,10 +1,5 @@
 <?php
 
-include('opcache.php');
-
-$oh = new OpcacheHelper();
-$ohStats = $oh->run();
-
 if(!extension_loaded('appdynamics_agent')) {
     function appdynamics_start_transaction($arg1, $arg2) {}
     function appdynamics_continue_transaction($arg1) {}

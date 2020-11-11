@@ -87,6 +87,10 @@ try {
       if (!service.disabled) {
         const serviceCount = typeof service.count === 'number' ? service.count : 1
         for (let nodeid = 0; nodeid < serviceCount; nodeid++) {
+          if (service.type === 'dotnet') {
+            service.type = 'dotnetcore'
+          }
+
           const dockerImage = service.type === 'custom' ? service.image : imagePrefix + '/' + service.type
 
           global.dbmon = global.dbmon === 'maybe' ? (service.type === 'mysql') : global.dbmon
@@ -142,6 +146,23 @@ try {
             } else {
               cmd.push('-e', 'WITH_LIVEDEBUG=0')
             }
+          }
+
+          if (service.agent === 'yes' && service.type === 'dotnetcore') {
+            cmd.push('-e', `APPDYNAMICS_CONTROLLER_HOST_NAME=${controller.hostname}`)
+            cmd.push('-e', `APPDYNAMICS_CONTROLLER_PORT=${controller.port}`)
+            cmd.push('-e', `APPDYNAMICS_CONTROLLER_SSL_ENABLED=${controller.protocol.startsWith('https')}`)
+            cmd.push('-e', `APPDYNAMICS_AGENT_APPLICATION_NAME=${apm.applicationName}`)
+            cmd.push('-e', `APPDYNAMICS_AGENT_ACCOUNT_NAME=${apm.accountName}`)
+            cmd.push('-e', `APPDYNAMICS_AGENT_ACCOUNT_ACCESS_KEY=${apm.accountAccessKey}`)
+            cmd.push('-e', `APPDYNAMICS_NETVIZ_AGENT_HOST=${gatewayIP}`)
+            cmd.push('-e', 'APPDYNAMICS_NETVIZ_AGENT_PORT=3892')
+            cmd.push('-e', `APPDYNAMICS_AGENT_TIER_NAME=${name}`)
+            cmd.push('-e', 'APPDYNAMICS_AGENT_REUSE_NODE_NAME=true')
+            cmd.push('-e', `APPDYNAMICS_AGENT_REUSE_NODE_NAME_PREFIX=${name}`)
+            cmd.push('-e', 'CORECLR_PROFILER={57e1aa68-2229-41aa-9931-a6e93bbc64d8}')
+            cmd.push('-e', 'CORECLR_ENABLE_PROFILING=1')
+            cmd.push('-e', 'CORECLR_PROFILER_PATH=/opt/appdynamics/libappdprofiler.so')
           }
 
           if (service.type === 'mysql') {

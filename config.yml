@@ -1,23 +1,17 @@
+# the global configuration allows you to turn on specific features
 global:
   machine: true
   netviz: true
   loaders: true
   services: true
   chaos: true
+  dbmon: true
 
+# apm settings are merged with your default settings.
 apm:
-  controller: http://localhost:8090
-  accountName: customer1
-  accountAccessKey:
   applicationName: apm_game
-  eventsService: http://localhost:9080
-  globalAccountName:
   eum:
-    appKey:
-    adrumExtUrlHttp: http://cdn.appdynamics.com
-    adrumExtUrlHttps: https://cdn.appdynamics.com
-    beaconUrlHttp: http://col.eum-appdynamics.com
-    beaconUrlHttps: https://col.eum-appdynamics.com
+    appKey: EC-AAB-FTU
 
 services:
   frontend:
@@ -27,16 +21,25 @@ services:
       dc: WEST
     agent: yes
     port: 3000
+    aliases:
+      - www.ecommer.ce
     endpoints:
       http:
         /checkout:
+          - log,INFO,Checkout
           - http://backend/cart/checkout
           - cache,128
-          - image,http://cdn/logo.png
-          - script,http://cdn/scrips.js
+          - image,http://cdn.in-the.cloud/logo.png
+          - script,http://cdn.in-the.cloud/scrips.js
         /addtocart:
-          - [http://backend/cart/add, http://backend-v2/cart/add, http://backend-v3/cart/add]
-          - image,http://cdn/logo.png
+          - [http://backend/cart/add, http://backendv2/cart/add, http://backendv3/cart/add]
+          - ajax,http://search-service/search
+          - ajax,http://www.ecommer.ce/search
+          - image,http://cdn.in-the.cloud/logo.png
+          - log,INFO,Add product to cart
+        /search:
+          - code,search.js
+          - http://search-service/search
   backend:
     type: java
     agent: yes
@@ -45,28 +48,31 @@ services:
       http:
         /cart/checkout:
           - cache,1024
-          - - call: http://ext-payment-1/pay
+          - - call: http://api.easy.pay/pay
               remoteTimeout: 2000
-            - call: http://ext-payment-2/pay
+            - call: http://api-prod.pay.me/pay
               remoteTimeout: 2000
-            - call: http://ext-payment-3/pay
+            - call: http://api.payster.net/pay
               remoteTimeout: 2000
-            - call: http://ext-payment-1/pay
+            - call: http://api.easy.pay/pay
               remoteTimeout: 2000
-            - call: http://ext-payment-2/pay
+            - call: http://api-prod.pay.me/pay
               remoteTimeout: 2000
-            - call: http://ext-payment-1/pay
+            - call: http://api.easy.pay/pay
               remoteTimeout: 2000
         /cart/add:
           - cache,128
           - call: slow,800
             probability: 0.1
-          - image,http://cdn/logo.png
+          - image,http://cdn.in-the.cloud/logo.png
           - call: data
             id: price
             type: double
             value: [1,2,3]
-  backend-v2:
+        /api/list:
+          - cache,1024
+          - log,WARN,Slow cache detected.
+  backendv2:
     type: java
     agent: yes
     port: 3010
@@ -76,8 +82,10 @@ services:
           - sql://backend-db/shop?query=INSERT INTO carts(name,value) VALUES("test","123")
           - call: slow,800
             probability: 0.5
-          - image,http://cdn/logo.png
-  backend-v3:
+          - image,http://cdn.in-the.cloud/logo.png
+        /api/list:
+          - cache,128
+  backendv3:
     type: php
     agent: yes
     port: 3007
@@ -87,11 +95,23 @@ services:
           - sql://backend-db/shop?query=INSERT INTO carts(name,value) VALUES("test","123")
           - call: slow,800
             probability: 0.5
-          - image,http://cdn/logo.png
+        /api/list:
+          - cache,128
+  search-service:
+    type: dotnet
+    agent: yes
+    port: 3008
+    endpoints:
+      http:
+        /search:
+          - slow,100
+          - http://backendv3/api/list
+          - http://backendv2/api/list
+          - http://backend/api/list
   ext-payment:
     type: nodejs
     agent: no
-    aliases: [ext-payment-1, ext-payment-2]
+    aliases: [api.easy.pay, api-prod.pay.me]
     endpoints:
       http:
         pay:
@@ -100,9 +120,12 @@ services:
           - call: error,500,Oopsi
             schedule: "* */3 * * * * *"
           - sleep,500
-  ext-payment-3:
+  api.payster.net:
     type: nodejs
     agent: no
+    options:
+      lossRate: 0.1
+      connectionDelay: 250
     port: 3001
     endpoints:
       http:
@@ -110,7 +133,7 @@ services:
           - call: error,500,Payment failed
             probability: 0.5
           - sleep,3000
-  cdn:
+  cdn.in-the.cloud:
     type: nodejs
     agent: no
     port: 3002
@@ -134,15 +157,15 @@ loaders:
     wait: 15
     count: 2
     urls:
-      - http://frontend/addtocart
-      - http://frontend/addtocart
-      - http://frontend/checkout
+      - http://www.ecommer.ce/addtocart
+      - http://www.ecommer.ce/addtocart
+      - http://www.ecommer.ce/checkout
 
 chaos:
-  pause-cdn:
+  pause-cdn.in-the.cloud:
     type: pumba
     interval: 1m
-    target: cdn
+    target: cdn.in-the.cloud
     command: pause
     duration: 5s
   network-loss:
@@ -155,7 +178,7 @@ chaos:
   network-delay:
     type: pumba
     interval: 8m
-    target: backend-v3
+    target: backendv3
     command: netem-delay
     duration: 30s
     time: 5000

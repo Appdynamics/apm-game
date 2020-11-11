@@ -307,7 +307,7 @@ A service can have the following properties:
 
 - **type** (required): Define the type of this service. You can currently use the following: `java`, `nodejs`, `php`, `mysql` and `custom`. **Hint**: Prefer nodejs for agentless services and also if you want to build a big environment, since it comes with the lowest overhead.
 - **agent**: Set to `no` or `yes` to disable or enable the appdynamics agent.
-- **count**: Set the number of instances, that will be started for this service. 
+- **count**: Set the number of instances, that will be started for this service.
 - **port**: Set a port which will be exposed to your docker host. So if you run locally, you can access this service via `http://localhost:<port>`
 - **endpoints** (java, nodejs, php only): Define multiple endpoints for this service. Read below to learn how to define endpoints.
 - **aliases**: Provide a list of network name aliases. This is useful for agentless services, that serve as multiple remote services, e.g. multiple payment providers. **Hint**: You can use any name for an alias, even some existing domain names (e.g. www.appdynamics.com)!
@@ -404,6 +404,7 @@ The example above first executes a call to another service, called backend, then
     - `type` (java only): The type of this data point. Possible values are `string`, `int` and `double`
     - `value`: The value of the data point. Use a single value or an array to add some randomness.
     - `chance` (nodejs only): Random fake data using [chance.js](https://chancejs.com/)
+  - `code,<script>` (nodejs): Execute a custom script from the scripts folder. See the example provided to learn more.  
 
 - **Modifiers** change the behaviour of a call. To use them provide an object notation for your call. As you can see in the example above, you can combine modifiers as you like:
   - `probability: <value>`: Execute this line of code with the probability of `<value>`. Provide a float for `<value>` between 0 and 1, where 0 means 0% and 1 means 100%.  

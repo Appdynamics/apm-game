@@ -4,15 +4,12 @@ RUN mkdir -p /opt/appdynamics/appdynamics-php-agent; tar xvfj /tmp/appdynamics-p
 RUN /opt/appdynamics/appdynamics-php-agent/install.sh -s -a ACCOUNTNAME@ACCESSKEY CONTROLLERHOST CONTROLLERPORT APPLICATIONNAME TIERNAME NODENAME
 RUN a2enmod rewrite
 RUN docker-php-ext-install pdo pdo_mysql
-RUN docker-php-ext-install opcache
 COPY entrypoint.sh /usr/local/bin/
 COPY agent-setup.php /usr/local/bin
 RUN chmod +x /usr/local/bin/entrypoint.sh
 COPY index.php /var/www/html
 COPY info.php /var/www/html
-COPY opcache.php /var/www/html
 COPY htaccess.txt /var/www/html/.htaccess
-COPY opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 EXPOSE 80
 CMD ["apache2-foreground"]

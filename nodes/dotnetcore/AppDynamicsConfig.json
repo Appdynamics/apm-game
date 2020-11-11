@@ -1,0 +1,8 @@
+{
+	"feature": [
+		"FULL_AGENT", "PREVIEW_FEATURE"
+	],
+	"log": [
+		{ "outputtype": "console" }
+	]
+}

@@ -16,13 +16,13 @@ For examples see below
 module.exports = function($) {
 
   // Log with log level "info" that the script starts
-  $.logger.info("Custom script start")
+  $.logger.info("Search script executed")
 
   // Add the price to snapshot&analytics data
-  $.add("price", 15)
+  $.add("limit", 1000)
 
   // Add a random name to snapshot&analytics data
-  $.add("name", $.chance.name())
+  $.add("keyword", $.chance.name())
 
   // With a 30% chance the execution is slowed down by 1.5 seconds
   if(chance.bool({likelihood: 30})) {
@@ -35,10 +35,10 @@ module.exports = function($) {
   }
 
   // The "add" method is just a wrapper around the AppDynamics API, with "txn" you can call those functions yourself
-  $.txn.addAnalyticsData("note", "Add this data only to analytics")
+  $.txn.addAnalyticsData("resultSize", 155)
 
   // Log with log level "debug" that the script ends
-  $.logger.debug("Custom script end")
+  $.logger.debug("Search script ended")
 
   // Will write "Hello World" to the output
   return "Hello World"
