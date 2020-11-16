@@ -55,6 +55,7 @@ Copy agent files into the directories for the java and PHP node:
 mv <PATH>/appdynamics-php-agent-x64-linux-<VERSION>.tar.bz2 nodes/php
 mv <PATH>/AppServerAgent-<VERSION>.zip nodes/java
 mv <PATH>/db-agent-<VERSION>.zip infrastructure/dbmon
+mv <PATH>/DotNetCore-linux-x64-<VERSION>.zip nodes/dotnetcore
 ```
 
 
