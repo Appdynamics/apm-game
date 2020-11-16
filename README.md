@@ -17,6 +17,7 @@ APM Game implements and uses the following features of AppDynamics:
   - java
   - nodejs
   - php
+  - .Net Core
 - User Experience
   - BRUM
 - Databases
@@ -46,6 +47,7 @@ Agent prerequisites (from download.appdynamics.com or the "Getting Started Wizar
   - PHP Agent
   - Java Agent
   - DB Agent
+  - .NET Agent for Linux
 
 Copy agent files into the directories for the java and PHP node:
 
@@ -53,6 +55,7 @@ Copy agent files into the directories for the java and PHP node:
 mv <PATH>/appdynamics-php-agent-x64-linux-<VERSION>.tar.bz2 nodes/php
 mv <PATH>/AppServerAgent-<VERSION>.zip nodes/java
 mv <PATH>/db-agent-<VERSION>.zip infrastructure/dbmon
+mv <PATH>/DotNetCore-linux-x64-<VERSION>.zip nodes/dotnetcore
 ```
 
 
