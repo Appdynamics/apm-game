@@ -17,6 +17,7 @@ APM Game implements and uses the following features of AppDynamics:
   - java
   - nodejs
   - php
+  - .Net Core (dotnet)
 - User Experience
   - BRUM
 - Databases
@@ -46,6 +47,7 @@ Agent prerequisites (from download.appdynamics.com or the "Getting Started Wizar
   - PHP Agent
   - Java Agent
   - DB Agent
+  - .NET Agent for Linux
 
 Copy agent files into the directories for the java and PHP node:
 
@@ -53,6 +55,7 @@ Copy agent files into the directories for the java and PHP node:
 mv <PATH>/appdynamics-php-agent-x64-linux-<VERSION>.tar.bz2 nodes/php
 mv <PATH>/AppServerAgent-<VERSION>.zip nodes/java
 mv <PATH>/db-agent-<VERSION>.zip infrastructure/dbmon
+mv <PATH>/AppDynamics-DotNetCore-linux-x64-<VERSION>.zip nodes/dotnetcore
 ```
 
 
@@ -305,7 +308,7 @@ In this section you provide all the tiers/nodes and remote services that are con
 
 A service can have the following properties:
 
-- **type** (required): Define the type of this service. You can currently use the following: `java`, `nodejs`, `php`, `mysql` and `custom`. **Hint**: Prefer nodejs for agentless services and also if you want to build a big environment, since it comes with the lowest overhead.
+- **type** (required): Define the type of this service. You can currently use the following: `java`, `nodejs`, `php`, `dotnet` `mysql` and `custom`. **Hint**: Prefer nodejs for agentless services and also if you want to build a big environment, since it comes with the lowest overhead.
 - **agent**: Set to `no` or `yes` to disable or enable the appdynamics agent.
 - **count**: Set the number of instances, that will be started for this service.
 - **port**: Set a port which will be exposed to your docker host. So if you run locally, you can access this service via `http://localhost:<port>`
