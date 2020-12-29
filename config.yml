@@ -9,7 +9,7 @@ global:
 
 # apm settings are merged with your default settings.
 apm:
-  applicationName: apm_game
+  applicationName: my_apm_game
   eum:
     appKey: EC-AAB-FTU
 

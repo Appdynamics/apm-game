@@ -1,0 +1,92 @@
+# the global configuration allows you to turn on specific features
+global:
+  dbmon: true
+
+apm:
+  applicationName: nodejs-flight-search
+
+services:
+  api-service:
+    type: nodejs
+    count: 1
+    port: 3000
+    agent: yes
+    endpoints:
+      http:
+        /search:
+          - [http://api.search-flights.com/search, http://api.flighty.com/lookup, http://api.flyfly.fly/fly]
+          - call: slow,1500
+            schedule: "* */2 * * * * *"
+          - call: slow,1500
+            schedule: "* */5 * * * * *"
+  frontend-service:
+    type: nodejs
+    aliases: [flight.search]
+    count: 1
+    port: 3001
+    agent: yes
+    endpoints:
+      http:
+        /search:
+          - http://search-service/flights/query
+        /book:
+          - http://booking-engine/book
+          - http://booking-engine/book
+          - http://booking-engine/book
+  booking-engine:
+    type: php
+    agent: yes
+    port: 3002
+    endpoints:
+      http:
+        /book:
+          - sql://bookings-db/bookings?query=INSERT INTO customers(name,email) VALUES("Austin Williams","austin.williams.3@gmail.com")
+          - call: slow,800
+            probability: 0.25
+  bookings-db:
+    type: mysql
+    databases:
+      bookings:
+        customers: [id, name, email]
+  search-service:
+    type: nodejs
+    agent: yes
+    disable: true
+    port: 3003
+    endpoints:
+      http:
+        /flights/query:
+          - [http://api.search-flights.com/search, http://api.flighty.com/lookup, http://api.flyfly.fly/fly]
+          - slow,64
+          - call: slow,2048
+            probability: 0.1
+  backend-service:
+    type: dotnetcore
+    agent: no
+    disable: true
+    port: 3004
+    aliases: [api.search-flights.com,api.flighty.com,api.flyfly.fly]
+    endpoints:
+      http:
+        /search:
+          - call: sleep,10
+        /lookup:
+          - call: sleep,10
+        /fly:
+          - call: sleep,10
+
+loaders:
+  aw:
+    type: puppeteer
+    wait: 15
+    count: 1
+    urls:
+      - http://flight.search/search
+      - http://flight.search/search
+      - http://flight.search/book
+  ddos:
+    type: curl
+    wait: 15
+    count: 5
+    urls:
+      - http://api-service/search
