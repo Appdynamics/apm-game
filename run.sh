@@ -51,6 +51,7 @@ CUSTOM_CODE_DIR="$(pwd)/scripts"
 IMAGE_PREFIX="apm-game"
 DOCKER_NETWORK="${CONTAINER_PREFIX}/network"
 DOCKER_LOGS_VOLUME="${CONTAINER_PREFIX}-logs"
+DOCKER_PHP_PROXY_VOLUME="${CONTAINER_PREFIX}-php-proxy"
 
 IS_RUNNING=`docker ps -f name=${CONTAINER_PREFIX} -q`
 
@@ -69,10 +70,12 @@ fi
 
 docker network create ${DOCKER_NETWORK}
 docker volume create ${DOCKER_LOGS_VOLUME}
+docker volume create ${DOCKER_PHP_PROXY_VOLUME}
 
 NETWORK_DETAILS=$(docker network inspect ${DOCKER_NETWORK})
 
-node master/index.js "${CONFIG}" "${IMAGE_PREFIX}" "${DOCKER_NETWORK}" "${DOCKER_LOGS_VOLUME}" "${CONTAINER_PREFIX}" "${CUSTOM_CODE_DIR}" "${NETWORK_DETAILS}" "${DEFAULT_FILE_NAME}" "${VERBOSITY}"
+node master/index.js "${CONFIG}" "${IMAGE_PREFIX}" "${DOCKER_NETWORK}" "${DOCKER_LOGS_VOLUME}" "${CONTAINER_PREFIX}" "${CUSTOM_CODE_DIR}" "${NETWORK_DETAILS}" "${DEFAULT_FILE_NAME}" "${VERBOSITY}" "${DOCKER_PHP_PROXY_VOLUME}"
 
 docker network rm ${DOCKER_NETWORK}
 docker volume rm ${DOCKER_LOGS_VOLUME}
+docker volume rm ${DOCKER_PHP_PROXY_VOLUME}

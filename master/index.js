@@ -10,6 +10,7 @@ const merge = require('lodash.merge')
 const imagePrefix = process.argv[3]
 const dockerNetwork = process.argv[4]
 const dockerLogsVolume = process.argv[5]
+const dockerPhpProxyVolume = process.argv[11]
 const containerPrefix = process.argv[6]
 
 var localCustomCodeDir = process.argv[7]
@@ -62,7 +63,7 @@ try {
 
   const { apm = {}, services = {}, loaders = {}, chaos = {}, liveDebug = {} } = config
 
-  const global = Object.assign({ machine: true, netviz: true, services: true, loaders: true, dbmon: 'maybe', chaos: true }, config.global)
+  const global = Object.assign({ machine: true, netviz: true, services: true, loaders: true, dbmon: 'maybe', chaos: true, phpproxy: 0 }, config.global)
 
   if (typeof apm.controller !== 'string') {
     console.error(chalk.red('Could not read controller properties!'))
@@ -126,6 +127,11 @@ try {
             Object.keys(service.labels).forEach(function (label) {
               cmd.push('--label', `${label}=${service.labels[label]}`)
             })
+          }
+
+          if (service.agent === 'yes' && service.type === 'php') {
+            cmd.push('-v', `${dockerPhpProxyVolume}:/phpproxy`)
+            global.phpproxy += 1
           }
 
           if (service.agent === 'yes' && service.type === 'java') {
@@ -325,6 +331,35 @@ try {
     containers.push(databaseAgentName)
   } else {
     console.log(chalk.yellow('[infrastructure] skipping database agent.'))
+  }
+
+  if (global.phpproxy > 0) {
+    const phpProxyMaxHeapSize = 300 * Math.ceil(global.phpproxy / 10)
+    const phpProxyMinHeapSize = 50 * Math.ceil(global.phpproxy / 10)
+    const phpProxyMaxPermSize = 120 * Math.ceil(global.phpproxy / 10)
+
+    var phpProxyName = `${containerPrefix}-php-proxy`
+    var phpProxyCmd = ['docker', 'run',
+      '-e', 'APPDYNAMICS_PROXY_CONTROL_DIR=/phpproxy',
+      '-e', 'APPDYNAMICS_PROXY_COMMUNICATION_DIR=/phpproxy',
+      '-e', 'APPDYNAMICS_PROXY_LOG_DIR=/phpproxy',
+      '-e', `APPDYNAMICS_PROXY_MAX_HEAP_SIZE=${phpProxyMaxHeapSize}m`,
+      '-e', `APPDYNAMICS_PROXY_MIN_HEAP_SIZE=${phpProxyMinHeapSize}m`,
+      '-e', `APPDYNAMICS_PROXY_MAX_PERM_SIZE=${phpProxyMaxPermSize}m`,
+      '--label', 'container-type=php-proxy',
+      '--rm',
+      '--network', dockerNetwork,
+      '--name', phpProxyName,
+      '-v', `${dockerPhpProxyVolume}:/phpproxy`,
+      '--network-alias=php-proxy'
+    ]
+
+    phpProxyCmd.push(imagePrefix + '/phpproxy')
+
+    runCmd(shellescape(phpProxyCmd), chalk.green('[infrastructure] starting php proxy'))
+    containers.push(phpProxyName)
+  } else {
+    console.log(chalk.yellow('[infrastructure] skipping php proxy.'))
   }
 
   if (global.chaos) {

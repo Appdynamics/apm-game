@@ -12,6 +12,7 @@ $keys = [
   'APPLICATIONNAME' => $config->applicationName,
   'TIERNAME' => $service->name,
   'NODENAME' => $service->name.'-'.gethostname(),
+  'NODEREUSEPREFIX' => $service->name,
   'ACCOUNTNAME' => $config->accountName,
   'ACCESSKEY' => $config->accountAccessKey
 ];

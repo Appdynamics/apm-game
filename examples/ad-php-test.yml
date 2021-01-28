@@ -1,0 +1,61 @@
+# the global configuration allows you to turn on specific features
+global:
+  machine: false
+  netviz: false
+  loaders: true
+  services: true
+  chaos: false
+  dbmon: false
+
+apm:
+  applicationName: AD-PHP-Test
+
+services:
+  frontend:
+    type: php
+    count: 2
+    agent: yes
+    port: 3000
+    endpoints:
+      http:
+        /upload:
+          - [http://processing-0/magicByte, http://processing-1/magicByte]
+          - [http://processing-0/virus, http://processing-1/virus]
+  processing:
+    type: php
+    agent: yes
+    count: 2
+    endpoints:
+      http:
+        /magicByte:
+          - cache,128
+          - call: data
+            id: magicByteCheck
+            type: string
+            value: [yes,no]
+        /virus:
+          - [http://virus-scanner-0/scan, http://virus-scanner-1/scan]
+          - call: data
+            id: virusFoundScore
+            type: int
+            value: [0,1,5,10]
+  virus-scanner:
+    type: php
+    agent: yes
+    count: 2
+    port: 3001
+    endpoints:
+      http:
+        scan:
+          - sleep,1500
+          - call: error,500,Scan failed
+            probability: 0.1
+          - sleep,500
+loaders:
+  browser:
+    type: puppeteer
+    wait: 15
+    count: 1
+    urls:
+      - http://frontend-0/upload
+      - http://frontend-1/upload
