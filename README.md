@@ -52,7 +52,8 @@ Agent prerequisites (from download.appdynamics.com or the "Getting Started Wizar
 Copy agent files into the directories for the java and PHP node:
 
 ```shell
-mv <PATH>/appdynamics-php-agent-x64-linux-<VERSION>.tar.bz2 nodes/php
+cp <PATH>/appdynamics-php-agent-x64-linux-<VERSION>.tar.bz2 nodes/php
+mv <PATH>/appdynamics-php-agent-x64-linux-<VERSION>.tar.bz2 infrastructure/phpproxy
 mv <PATH>/AppServerAgent-<VERSION>.zip nodes/java
 mv <PATH>/db-agent-<VERSION>.zip infrastructure/dbmon
 mv <PATH>/AppDynamics-DotNetCore-linux-x64-<VERSION>.zip nodes/dotnetcore
