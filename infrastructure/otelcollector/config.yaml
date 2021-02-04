@@ -1,0 +1,42 @@
+processors:
+  resource:
+    attributes:
+      - key: appdynamics.controller.account
+        action: upsert
+        value: ${APPDYNAMICS_AGENT_ACCOUNT_NAME}
+      - key: appdynamics.controller.host
+        action: upsert
+        value: ${APPDYNAMICS_CONTROLLER_HOST_NAME}
+      - key: appdynamics.controller.port
+        action: upsert
+        value: 443
+      - key: service.namespace
+        action: upsert
+        value: ${APPDYNAMICS_AGENT_APPLICATION_NAME}
+  batch:
+    timeout: 30s
+    send_batch_size: 8192
+receivers:
+  zipkin:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:55680
+      http:
+        endpoint: 0.0.0.0:55681
+exporters:
+  logging:
+    loglevel: ${OPENTELEMETRY_EXPORTER_LOG_LEVEL}
+  otlphttp:
+    endpoint: ${APPDYNAMICS_AGENT_API_ENDPOINT}
+    headers:
+      x-api-key: ${APPDYNAMICS_AGENT_API_KEY}
+extensions:
+  zpages:
+    endpoint: 0.0.0.0:55679
+service:
+  pipelines:
+    traces:
+      receivers: [otlp, zipkin]
+      processors: [resource, batch]
+      exporters: [otlphttp, logging]

@@ -24,3 +24,4 @@ docker build -t "${IMAGE_PREFIX}/machine" infrastructure/machine;
 docker build -t "${IMAGE_PREFIX}/netviz" infrastructure/netviz;
 docker build -t "${IMAGE_PREFIX}/dbmon" infrastructure/dbmon;
 docker build -t "${IMAGE_PREFIX}/phpproxy" infrastructure/phpproxy;
+docker build -t "${IMAGE_PREFIX}/otelcollector" infrastructure/otelcollector

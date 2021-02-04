@@ -3,3 +3,4 @@ node_modules/
 package-lock.json
 nodes/*/node.log
 defaults.yml
+defaults-*.yml

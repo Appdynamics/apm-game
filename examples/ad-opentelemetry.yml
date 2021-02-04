@@ -1,0 +1,115 @@
+# the global configuration allows you to turn on specific features
+global:
+  machine: false
+  netviz: false
+  loaders: true
+  services: true
+  chaos: false
+  dbmon: false
+  opentelemetry: true
+
+apm:
+  applicationName: AD-Virus-Scanner-App
+
+services:
+  frontend:
+    type: nodejs
+    agent: otel
+    port: 3000
+    endpoints:
+      http:
+        /login:
+          - http://authentication-service/login
+        /upload:
+          - http://processing/magicByte
+          - http://processing/virus
+          - http://ocr-service/scan
+        /read:
+          - http://ocr-service/read
+  authentication-service:
+    type: nodejs
+    agent: otel
+    endpoints:
+      http:
+        /login:
+          - sleep,50
+          - http://logging-service/log
+  logging-service:
+    type: java
+    agent: otel
+    endpoints:
+      http:
+        /log:
+          - sleep,50
+  file-server:
+    type: java
+    agent: otel
+    endpoints:
+      http:
+        /get:
+          - sleep,50
+          - http://logging-service/log
+        /put:
+          - sleep,50
+          - http://logging-service/log
+  ocr-service:
+    type: nodejs
+    agent: otel
+    endpoints:
+      http:
+        /scan:
+          - sleep,500
+          - http://logging-service/log
+          - http://file-server/put
+        /read:
+          - sleep,128
+          - call: error,404,File Not Found
+            probability: 0.2
+          - http://file-server/get
+  processing:
+    type: nodejs
+    agent: otel
+    endpoints:
+      http:
+        /magicByte:
+          - cache,128
+          - call: data
+            id: magicByteCheck
+            type: string
+            value: [yes,no]
+        /virus:
+          - http://virus-scanner/scan
+          - call: data
+            id: virusFoundScore
+            type: int
+            value: [0,1,5,10]
+  virus-scanner:
+    type: java
+    agent: otel
+    port: 3001
+    endpoints:
+      http:
+        scan:
+          - sleep,1500
+          - http://logging-service/log
+          - call: error,500,Scan failed
+            probability: 0.1
+          - sleep,500
+
+
+loaders:
+  browser:
+    type: puppeteer
+    wait: 15
+    count: 4
+    urls:
+      - http://frontend/login
+      - http://frontend/upload
+      - http://frontend/upload
+      - http://frontend/read
+      - http://frontend/read
+      - http://frontend/login
+      - http://frontend/upload
+      - http://frontend/upload
+      - http://frontend/read
+      - http://frontend/read

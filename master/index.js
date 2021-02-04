@@ -30,6 +30,7 @@ var containers = []
 
 function runCmd(cmd, msg = false) {
   console.log(msg || `Running: ${cmd}`)
+  console.log(cmd)
   return spawn(cmd, {
     stdio: verbosity > 0 ? 'inherit' : 'ignore',
     shell: true
@@ -63,7 +64,7 @@ try {
 
   const { apm = {}, services = {}, loaders = {}, chaos = {}, liveDebug = {} } = config
 
-  const global = Object.assign({ machine: true, netviz: true, services: true, loaders: true, dbmon: 'maybe', chaos: true, phpproxy: 0 }, config.global)
+  const global = Object.assign({ machine: true, netviz: true, services: true, loaders: true, dbmon: 'maybe', chaos: true, phpproxy: 0, opentelemetry: false }, config.global)
 
   if (typeof apm.controller !== 'string') {
     console.error(chalk.red('Could not read controller properties!'))
@@ -132,6 +133,16 @@ try {
           if (service.agent === 'yes' && service.type === 'php') {
             cmd.push('-v', `${dockerPhpProxyVolume}:/phpproxy`)
             global.phpproxy += 1
+          }
+
+          // Java specific, nodejs does not use that mechanism for OpenTelemetry detection
+          if (service.agent === 'otel' && service.type === 'java') {
+            cmd.push('-e', `APPDYNAMICS_AGENT_TIER_NAME=${name}`)
+            cmd.push('-e', `OTEL_RESOURCE_ATTRIBUTES=service.name=${name}`)
+
+            cmd.push('-e', 'WITH_OTEL=1')
+          } else {
+            cmd.push('-e', 'WITH_OTEL=0')
           }
 
           if (service.agent === 'yes' && service.type === 'java') {
@@ -248,6 +259,32 @@ try {
     })
   } else {
     console.log(chalk.yellow('Skipping loaders.'))
+  }
+
+  if (global.opentelemetry) {
+    var otelCollectorName = `${containerPrefix}-otel-collector`
+    var otelCollectorCmd = ['docker', 'run',
+      '-e', `APPDYNAMICS_CONTROLLER_HOST_NAME=${controller.hostname}`,
+      '-e', `APPDYNAMICS_CONTROLLER_PORT=${controller.port}`,
+      '-e', `APPDYNAMICS_AGENT_ACCOUNT_NAME=${apm.accountName}`,
+      '-e', `APPDYNAMICS_AGENT_APPLICATION_NAME=${apm.applicationName}`,
+      '-e', `APPDYNAMICS_AGENT_API_ENDPOINT=${apm.apiEndPoint}`,
+      '-e', `APPDYNAMICS_AGENT_API_KEY=${apm.apiKey}`,
+      '-e', `OPENTELEMETRY_EXPORTER_LOG_LEVEL=${verbosity > 0 ? 'DEBUG' : 'INFO'}`,
+      '--rm',
+      '--network', dockerNetwork,
+      '--name', otelCollectorName,
+      '--network-alias=opentelemetry-collector',
+      '--network-alias=otel-collector',
+      imagePrefix + '/otelcollector',
+      '--log-level', `${verbosity > 0 ? 'DEBUG' : 'INFO'}`,
+      '--config', '/etc/otel/config.yaml'
+    ]
+
+    console.log(otelCollectorCmd)
+
+    runCmd(shellescape(otelCollectorCmd), chalk.green('[infrastructure] starting opentelemetry collector'))
+    containers.push(otelCollectorName)
   }
 
   if (global.machine) {

@@ -22,7 +22,8 @@ var appdynamics = {
     return {
       startExitCall: function () {},
       endExitCall: function () {},
-      addSnapshotData: function () {}
+      addSnapshotData: function () {},
+      addAnalyticsData: function () {}
     }
   }
 }
@@ -63,6 +64,8 @@ if (config.agent === 'yes') {
   }
   console.log('Appdynamics Profile', appdynamicsProfile)
   appdynamics.profile(appdynamicsProfile)
+} else if (config.agent === 'otel') {
+  require('./otel-tracing.js')
 }
 
 const express = require('express')
